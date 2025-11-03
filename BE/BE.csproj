@@ -45,6 +45,9 @@
     <Compile Include="ControlCambioEntry.cs" />
     <Compile Include="Idioma.cs" />
     <Compile Include="Permiso.cs" />
+    <Compile Include="PermisoComponent.cs" />
+    <Compile Include="PermisoComposite.cs" />
+    <Compile Include="PermisoNodo.cs" />
     <Compile Include="Rol.cs" />
     <Compile Include="Sesion.cs" />
     <Compile Include="Usuario.cs" />

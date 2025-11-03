@@ -25,21 +25,21 @@ namespace BL
 
         public List<Usuario> ListarUsuarios()
         {
-            if (!SessionManager.Instancia.TieneRol("Administrador"))
-                throw new UnauthorizedAccessException("Solo un Administrador puede ver usuarios.");
+            if (!SessionManager.Instancia.TienePermiso("Usuario.Modificar"))
+                throw new UnauthorizedAccessException("No contás con permiso para listar usuarios.");
             return _repo.ListarUsuarios();
         }
 
         public List<Rol> ListarRoles()
         {
-            if (!SessionManager.Instancia.TieneRol("Administrador"))
-                throw new UnauthorizedAccessException("Solo un Administrador puede registrar usuarios.");
+            if (!SessionManager.Instancia.TienePermiso("Usuario.Modificar"))
+                throw new UnauthorizedAccessException("No contás con permiso para consultar roles.");
             return _repo.ListarRoles();
         }
 
         public Usuario ObtenerUsuarioCompleto(int id)
         {
-            if (!SessionManager.Instancia.TieneRol("Administrador"))
+            if (!SessionManager.Instancia.TienePermiso("Usuario.Modificar"))
                 throw new UnauthorizedAccessException();
 
             var u = _usrRepo.GetById(id);
@@ -52,8 +52,8 @@ namespace BL
 
         public int CrearUsuario(string email, string nombre, string passwordPlano, bool activo, IEnumerable<int> rolesIds)
         {
-            if (!SessionManager.Instancia.TieneRol("Administrador"))
-                throw new UnauthorizedAccessException("Solo un Administrador puede registrar usuarios.");
+            if (!SessionManager.Instancia.TienePermiso("Usuario.Alta"))
+                throw new UnauthorizedAccessException("No contás con permiso para crear usuarios.");
 
             if (string.IsNullOrWhiteSpace(email)) throw new ArgumentException("Email requerido");
             if (string.IsNullOrWhiteSpace(nombre)) throw new ArgumentException("Nombre requerido");
@@ -98,8 +98,8 @@ namespace BL
             string passwordPlano // puede venir null o ""
         )
         {
-            if (!SessionManager.Instancia.TieneRol("Administrador"))
-                throw new UnauthorizedAccessException("Solo un Administrador puede modificar usuarios.");
+            if (!SessionManager.Instancia.TienePermiso("Usuario.Modificar"))
+                throw new UnauthorizedAccessException("No contás con permiso para modificar usuarios.");
 
             // 1. traigo el usuario original para comparar
             var original = _usrRepo.GetById(id);
@@ -225,5 +225,47 @@ namespace BL
                 usuarioId: usuarioId
             );
         }
+        public void ActualizarRolesUsuario(int usuarioId, List<int> nuevosRoles)
+        {
+            if (!SessionManager.Instancia.TienePermiso("Usuario.Modificar"))
+                throw new UnauthorizedAccessException("No contás con permiso para modificar roles de usuario.");
+
+            _repo.ReemplazarRolesUsuario(usuarioId, nuevosRoles);
+
+            // Registramos el cambio
+            int? usuarioActualId = SessionManager.Instancia.UsuarioActual?.Id;
+            _ccRepo.RegistrarCambio(
+                entidad: "Usuario",
+                entidadId: usuarioId,
+                accion: "Modificacion",
+                campo: "Roles",
+                valorAnterior: null,
+                valorNuevo: string.Join(",", nuevosRoles),
+                usuarioId: usuarioActualId
+            );
+        }
+
+        public void EliminarUsuario(int usuarioId)
+        {
+            if (!SessionManager.Instancia.TienePermiso("Usuario.Baja"))
+                throw new UnauthorizedAccessException("No contás con permiso para eliminar usuarios.");
+
+            var actual = SessionManager.Instancia.UsuarioActual;
+            if (actual != null && actual.Id == usuarioId)
+                throw new InvalidOperationException("No podés eliminar tu propio usuario.");
+
+            _repo.EliminarUsuario(usuarioId);
+
+            _ccRepo.RegistrarCambio(
+                entidad: "Usuario",
+                entidadId: usuarioId,
+                accion: "Baja",
+                campo: null,
+                valorAnterior: null,
+                valorNuevo: null,
+                usuarioId: actual?.Id
+            );
+        }
+
     }
 }

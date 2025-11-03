@@ -1,4 +1,7 @@
-﻿namespace Proyecto_IS_Sistema_De_Tickets
+﻿using System;
+using System.Windows.Forms;
+
+namespace Proyecto_IS_Sistema_De_Tickets
 {
     partial class FormPrueba
     {
@@ -33,6 +36,7 @@
             this.errorProvider1 = new System.Windows.Forms.ErrorProvider(this.components);
             this.tabGeneral = new System.Windows.Forms.TabControl();
             this.tabMenuPrincipal = new System.Windows.Forms.TabPage();
+            this.cmbIdiomas = new System.Windows.Forms.ComboBox();
             this.tabUsuarios = new System.Windows.Forms.TabPage();
             this.btnNuevoRegistro = new System.Windows.Forms.Button();
             this.btnActualizar = new System.Windows.Forms.Button();
@@ -53,6 +57,10 @@
             this.txtId = new System.Windows.Forms.TextBox();
             this.dgvBitacora = new System.Windows.Forms.DataGridView();
             this.tabControlCambios = new System.Windows.Forms.TabPage();
+            this.lblCambioCampo = new System.Windows.Forms.Label();
+            this.txtCambioCampo = new System.Windows.Forms.TextBox();
+            this.txtCambioEntidad = new System.Windows.Forms.TextBox();
+            this.btnLimpiarCambios = new System.Windows.Forms.Button();
             this.lblCambioFecha = new System.Windows.Forms.Label();
             this.lblCambioEntidadId = new System.Windows.Forms.Label();
             this.lblCambioEntidad = new System.Windows.Forms.Label();
@@ -65,12 +73,14 @@
             this.txtCambioEntidadId = new System.Windows.Forms.TextBox();
             this.txtCambioUsuarioId = new System.Windows.Forms.TextBox();
             this.dgvCambios = new System.Windows.Forms.DataGridView();
+            this.tabPermisos = new System.Windows.Forms.TabPage();
+            this.lblUsuarioSel = new System.Windows.Forms.Label();
+            this.btnAsignar = new System.Windows.Forms.Button();
+            this.btnQuitar = new System.Windows.Forms.Button();
+            this.treeDisponibles = new System.Windows.Forms.TreeView();
+            this.treeUsuarios = new System.Windows.Forms.TreeView();
             this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
-            this.btnLimpiarCambios = new System.Windows.Forms.Button();
-            this.txtCambioEntidad = new System.Windows.Forms.TextBox();
-            this.txtCambioCampo = new System.Windows.Forms.TextBox();
-            this.lblCambioCampo = new System.Windows.Forms.Label();
-            this.cmbIdiomas = new System.Windows.Forms.ComboBox();
+            this.btnEliminar = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.errorProvider1)).BeginInit();
             this.tabGeneral.SuspendLayout();
             this.tabMenuPrincipal.SuspendLayout();
@@ -80,6 +90,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.dgvBitacora)).BeginInit();
             this.tabControlCambios.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvCambios)).BeginInit();
+            this.tabPermisos.SuspendLayout();
             this.SuspendLayout();
             // 
             // btnCerrarSesion
@@ -105,6 +116,7 @@
             this.tabGeneral.Controls.Add(this.tabUsuarios);
             this.tabGeneral.Controls.Add(this.tabBitacora);
             this.tabGeneral.Controls.Add(this.tabControlCambios);
+            this.tabGeneral.Controls.Add(this.tabPermisos);
             this.tabGeneral.Location = new System.Drawing.Point(9, 2);
             this.tabGeneral.Margin = new System.Windows.Forms.Padding(2);
             this.tabGeneral.Name = "tabGeneral";
@@ -125,8 +137,18 @@
             this.tabMenuPrincipal.Text = "Menu Principal";
             this.tabMenuPrincipal.UseVisualStyleBackColor = true;
             // 
+            // cmbIdiomas
+            // 
+            this.cmbIdiomas.FormattingEnabled = true;
+            this.cmbIdiomas.Location = new System.Drawing.Point(616, 5);
+            this.cmbIdiomas.Name = "cmbIdiomas";
+            this.cmbIdiomas.Size = new System.Drawing.Size(139, 21);
+            this.cmbIdiomas.TabIndex = 0;
+            this.cmbIdiomas.SelectedIndexChanged += new System.EventHandler(this.cmbIdiomas_SelectedIndexChanged);
+            // 
             // tabUsuarios
             // 
+            this.tabUsuarios.Controls.Add(this.btnEliminar);
             this.tabUsuarios.Controls.Add(this.btnNuevoRegistro);
             this.tabUsuarios.Controls.Add(this.btnActualizar);
             this.tabUsuarios.Controls.Add(this.dgvGestionUsuario);
@@ -355,6 +377,41 @@
             this.tabControlCambios.Text = "Control Cambios";
             this.tabControlCambios.UseVisualStyleBackColor = true;
             // 
+            // lblCambioCampo
+            // 
+            this.lblCambioCampo.AutoSize = true;
+            this.lblCambioCampo.Location = new System.Drawing.Point(600, 219);
+            this.lblCambioCampo.Name = "lblCambioCampo";
+            this.lblCambioCampo.Size = new System.Drawing.Size(78, 13);
+            this.lblCambioCampo.TabIndex = 35;
+            this.lblCambioCampo.Text = "Cambio Campo";
+            // 
+            // txtCambioCampo
+            // 
+            this.txtCambioCampo.Location = new System.Drawing.Point(603, 234);
+            this.txtCambioCampo.Margin = new System.Windows.Forms.Padding(2);
+            this.txtCambioCampo.Name = "txtCambioCampo";
+            this.txtCambioCampo.Size = new System.Drawing.Size(92, 20);
+            this.txtCambioCampo.TabIndex = 34;
+            // 
+            // txtCambioEntidad
+            // 
+            this.txtCambioEntidad.Location = new System.Drawing.Point(601, 131);
+            this.txtCambioEntidad.Name = "txtCambioEntidad";
+            this.txtCambioEntidad.Size = new System.Drawing.Size(100, 20);
+            this.txtCambioEntidad.TabIndex = 33;
+            // 
+            // btnLimpiarCambios
+            // 
+            this.btnLimpiarCambios.Location = new System.Drawing.Point(686, 340);
+            this.btnLimpiarCambios.Margin = new System.Windows.Forms.Padding(2);
+            this.btnLimpiarCambios.Name = "btnLimpiarCambios";
+            this.btnLimpiarCambios.Size = new System.Drawing.Size(56, 19);
+            this.btnLimpiarCambios.TabIndex = 32;
+            this.btnLimpiarCambios.Text = "Limpiar";
+            this.btnLimpiarCambios.UseVisualStyleBackColor = true;
+            this.btnLimpiarCambios.Click += new System.EventHandler(this.btnLimpiarCambios_Click);
+            // 
             // lblCambioFecha
             // 
             this.lblCambioFecha.AutoSize = true;
@@ -465,49 +522,73 @@
             this.dgvCambios.Size = new System.Drawing.Size(569, 356);
             this.dgvCambios.TabIndex = 1;
             // 
-            // btnLimpiarCambios
+            // tabPermisos
             // 
-            this.btnLimpiarCambios.Location = new System.Drawing.Point(686, 340);
-            this.btnLimpiarCambios.Margin = new System.Windows.Forms.Padding(2);
-            this.btnLimpiarCambios.Name = "btnLimpiarCambios";
-            this.btnLimpiarCambios.Size = new System.Drawing.Size(56, 19);
-            this.btnLimpiarCambios.TabIndex = 32;
-            this.btnLimpiarCambios.Text = "Limpiar";
-            this.btnLimpiarCambios.UseVisualStyleBackColor = true;
-            this.btnLimpiarCambios.Click += new System.EventHandler(this.btnLimpiarCambios_Click);
+            this.tabPermisos.Controls.Add(this.lblUsuarioSel);
+            this.tabPermisos.Controls.Add(this.btnAsignar);
+            this.tabPermisos.Controls.Add(this.btnQuitar);
+            this.tabPermisos.Controls.Add(this.treeDisponibles);
+            this.tabPermisos.Controls.Add(this.treeUsuarios);
+            this.tabPermisos.Location = new System.Drawing.Point(4, 22);
+            this.tabPermisos.Name = "tabPermisos";
+            this.tabPermisos.Size = new System.Drawing.Size(760, 383);
+            this.tabPermisos.TabIndex = 4;
+            this.tabPermisos.Text = "Permisos";
+            this.tabPermisos.UseVisualStyleBackColor = true;
             // 
-            // txtCambioEntidad
+            // lblUsuarioSel
             // 
-            this.txtCambioEntidad.Location = new System.Drawing.Point(601, 131);
-            this.txtCambioEntidad.Name = "txtCambioEntidad";
-            this.txtCambioEntidad.Size = new System.Drawing.Size(100, 20);
-            this.txtCambioEntidad.TabIndex = 33;
+            this.lblUsuarioSel.AutoSize = true;
+            this.lblUsuarioSel.Location = new System.Drawing.Point(222, 22);
+            this.lblUsuarioSel.Name = "lblUsuarioSel";
+            this.lblUsuarioSel.Size = new System.Drawing.Size(35, 13);
+            this.lblUsuarioSel.TabIndex = 4;
+            this.lblUsuarioSel.Text = "label1";
             // 
-            // txtCambioCampo
+            // btnAsignar
             // 
-            this.txtCambioCampo.Location = new System.Drawing.Point(603, 234);
-            this.txtCambioCampo.Margin = new System.Windows.Forms.Padding(2);
-            this.txtCambioCampo.Name = "txtCambioCampo";
-            this.txtCambioCampo.Size = new System.Drawing.Size(92, 20);
-            this.txtCambioCampo.TabIndex = 34;
+            this.btnAsignar.Location = new System.Drawing.Point(328, 148);
+            this.btnAsignar.Name = "btnAsignar";
+            this.btnAsignar.Size = new System.Drawing.Size(108, 23);
+            this.btnAsignar.TabIndex = 3;
+            this.btnAsignar.Text = "Asignar Permiso";
+            this.btnAsignar.UseVisualStyleBackColor = true;
+            this.btnAsignar.Click += new System.EventHandler(this.btnAsignar_Click);
             // 
-            // lblCambioCampo
+            // btnQuitar
             // 
-            this.lblCambioCampo.AutoSize = true;
-            this.lblCambioCampo.Location = new System.Drawing.Point(600, 219);
-            this.lblCambioCampo.Name = "lblCambioCampo";
-            this.lblCambioCampo.Size = new System.Drawing.Size(78, 13);
-            this.lblCambioCampo.TabIndex = 35;
-            this.lblCambioCampo.Text = "Cambio Campo";
+            this.btnQuitar.Location = new System.Drawing.Point(328, 202);
+            this.btnQuitar.Name = "btnQuitar";
+            this.btnQuitar.Size = new System.Drawing.Size(108, 23);
+            this.btnQuitar.TabIndex = 2;
+            this.btnQuitar.Text = "Quitar Permiso";
+            this.btnQuitar.UseVisualStyleBackColor = true;
+            this.btnQuitar.Click += new System.EventHandler(this.btnQuitar_Click);
             // 
-            // cmbIdiomas
+            // treeDisponibles
             // 
-            this.cmbIdiomas.FormattingEnabled = true;
-            this.cmbIdiomas.Location = new System.Drawing.Point(616, 5);
-            this.cmbIdiomas.Name = "cmbIdiomas";
-            this.cmbIdiomas.Size = new System.Drawing.Size(139, 21);
-            this.cmbIdiomas.TabIndex = 0;
-            this.cmbIdiomas.SelectedIndexChanged += new System.EventHandler(this.cmbIdiomas_SelectedIndexChanged);
+            this.treeDisponibles.Location = new System.Drawing.Point(534, 3);
+            this.treeDisponibles.Name = "treeDisponibles";
+            this.treeDisponibles.Size = new System.Drawing.Size(213, 377);
+            this.treeDisponibles.TabIndex = 1;
+            // 
+            // treeUsuarios
+            // 
+            this.treeUsuarios.Location = new System.Drawing.Point(3, 3);
+            this.treeUsuarios.Name = "treeUsuarios";
+            this.treeUsuarios.Size = new System.Drawing.Size(213, 377);
+            this.treeUsuarios.TabIndex = 0;
+            this.treeUsuarios.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.treeUsuarios_AfterSelect_1);
+            // 
+            // btnEliminar
+            // 
+            this.btnEliminar.Location = new System.Drawing.Point(578, 310);
+            this.btnEliminar.Name = "btnEliminar";
+            this.btnEliminar.Size = new System.Drawing.Size(96, 23);
+            this.btnEliminar.TabIndex = 3;
+            this.btnEliminar.Text = "Eliminar Usuario";
+            this.btnEliminar.UseVisualStyleBackColor = true;
+            this.btnEliminar.Click += new System.EventHandler(this.btnEliminar_Click);
             // 
             // FormPrueba
             // 
@@ -531,9 +612,18 @@
             this.tabControlCambios.ResumeLayout(false);
             this.tabControlCambios.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvCambios)).EndInit();
+            this.tabPermisos.ResumeLayout(false);
+            this.tabPermisos.PerformLayout();
             this.ResumeLayout(false);
 
         }
+
+        private void treeUsuarios_AfterSelect(object sender, TreeViewEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+
 
         #endregion
 
@@ -579,5 +669,12 @@
         private System.Windows.Forms.Label lblCambioCampo;
         private System.Windows.Forms.TextBox txtCambioCampo;
         private System.Windows.Forms.ComboBox cmbIdiomas;
+        private System.Windows.Forms.TabPage tabPermisos;
+        private System.Windows.Forms.TreeView treeUsuarios;
+        private System.Windows.Forms.Label lblUsuarioSel;
+        private System.Windows.Forms.Button btnAsignar;
+        private System.Windows.Forms.Button btnQuitar;
+        private System.Windows.Forms.TreeView treeDisponibles;
+        private Button btnEliminar;
     }
 }

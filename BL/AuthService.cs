@@ -18,6 +18,7 @@ namespace BL
         private readonly SesionRepository _sesiones = new SesionRepository();
         private readonly AuditoriaRepository _aud = new AuditoriaRepository();
         private readonly CryptoManager _crypto = CryptoManager.Instancia;
+        private readonly PermisoService _permisos = PermisoService.Instancia;
 
         private const int MAX_INTENTOS = 5;
         private const int BLOQUEO_MIN = 15;
@@ -61,6 +62,7 @@ namespace BL
 
             // roles del usuario (para UI)
             u.Roles = _usuarios.GetRoles(u.Id);
+            u.PermisosCompuestos = _permisos.ObtenerPermisosDeUsuario(u.Id);
 
             var s = new Sesion
             {

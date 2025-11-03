@@ -45,11 +45,13 @@
     <Compile Include="ControlCambiosRepository.cs" />
     <Compile Include="DAL.cs" />
     <Compile Include="IdiomaRepository.cs" />
+    <Compile Include="PermisoDAO.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SesionRepository.cs" />
     <Compile Include="TraduccionRepository.cs" />
     <Compile Include="UserLoginDAL.cs" />
     <Compile Include="UsuarioAdminRepository.cs" />
+    <Compile Include="UsuarioPermisoRepository.cs" />
     <Compile Include="UsuarioRepository.cs" />
   </ItemGroup>
   <ItemGroup>

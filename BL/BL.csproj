@@ -47,6 +47,7 @@
     <Compile Include="IdiomaManager.cs" />
     <Compile Include="IdiomaService.cs" />
     <Compile Include="IIdiomaObserver.cs" />
+    <Compile Include="PermisoService.cs" />
     <Compile Include="SessionManager.cs" />
     <Compile Include="UserAdminService.cs" />
     <Compile Include="UserLoginBL.cs" />

@@ -19,7 +19,7 @@ namespace Proyecto_IS_Sistema_De_Tickets
         public FormGestionDeUsuario(ModoFormulario modo, int? usuarioId = null)
         {
             InitializeComponent();
-            
+
             _modo = modo;
             _usuarioId = usuarioId;
 
@@ -66,23 +66,71 @@ namespace Proyecto_IS_Sistema_De_Tickets
 
         private void btnGuardar_Click(object sender, EventArgs e)
         {
+            bool puedeCrear = SessionManager.Instancia.TienePermiso("Usuario.Alta");
+            bool puedeEditar = SessionManager.Instancia.TienePermiso("Usuario.Modificar");
+
             string email = txtEmail.Text.Trim();
             string nombre = txtNombre.Text.Trim();
             string pass1 = txtContraseña.Text;
             string pass2 = txtConfirmarContraseña.Text;
             bool activo = chkActivo.Checked;
 
-            var rolesIds = clbRoles.CheckedItems.Cast<Rol>().Select(r => r.Id).ToList();
+            // 1) saco lo tildado del tree
+            var rolesIds = new List<int>();
+            var permisosIds = new List<int>();
+
+            foreach (TreeNode raiz in tvPermisos.Nodes)
+            {
+                foreach (TreeNode nodo in raiz.Nodes)
+                {
+                    LeerNodoTildado(nodo, rolesIds, permisosIds);
+                }
+            }
+
+            // al menos un rol
             if (rolesIds.Count == 0)
             {
                 MessageBox.Show("Seleccioná al menos un rol.");
                 return;
             }
 
+            // ⚠️ 2) VALIDACIÓN DE REDUNDANCIA
+            // si tildó permisos sueltos y además tildó roles, tengo que chequear
+            if (permisosIds.Count > 0 && rolesIds.Count > 0)
+            {
+                // junto todos los permisos que traen esos roles
+                var permisosQueTraenLosRoles = new HashSet<int>();
+
+                foreach (var rolId in rolesIds)
+                {
+                    // esto en tu proyecto devuelve List<PermisoComponent>
+                    var permisosDelRol = PermisoService.Instancia.ObtenerPermisosDeRol(rolId);
+                    if (permisosDelRol == null) continue;
+
+                    foreach (var comp in permisosDelRol)
+                        AplanarPermisoComponent(comp, permisosQueTraenLosRoles);
+                }
+
+                // ahora sí: veo si algún permiso suelto está adentro de los permisos de los roles
+                foreach (var permSuelto in permisosIds)
+                {
+                    if (permisosQueTraenLosRoles.Contains(permSuelto))
+                    {
+                        MessageBox.Show("Estás asignando un permiso suelto que ya viene dentro de uno de los roles seleccionados. Quitá el permiso suelto.");
+                        return;
+                    }
+                }
+            }
+
             try
             {
                 if (_modo == ModoFormulario.Alta)
                 {
+                    if (!puedeCrear)
+                    {
+                        MessageBox.Show("No contás con permiso para dar de alta usuarios.");
+                        return;
+                    }
                     // en alta la pass es obligatoria
                     if (string.IsNullOrEmpty(pass1) || pass1.Length < 8)
                     {
@@ -95,14 +143,27 @@ namespace Proyecto_IS_Sistema_De_Tickets
                         return;
                     }
 
-                    int nuevoId = UserAdminService.Instancia.CrearUsuario(
-                        email, nombre, pass1, activo, rolesIds);
+                    int nuevoId = UserAdminService.Instancia.CrearUsuario(email, nombre, pass1, activo, rolesIds);
+
+                    // si tildó permisos sueltos, los guardo
+                    if (permisosIds.Count > 0)
+                    {
+                        var upRepo = new DAO.UsuarioPermisoRepository();
+                        foreach (var pid in permisosIds)
+                            upRepo.AsignarPermisoAUsuario(nuevoId, pid);
+                    }
 
                     MessageBox.Show("Usuario creado. Id=" + nuevoId);
                     this.Close();
                 }
                 else
                 {
+                    if (!puedeEditar)
+                    {
+                        MessageBox.Show("No contás con permiso para modificar usuarios.");
+                        return;
+                    }
+
                     // EDICIÓN
                     string passOpcional = null;
                     if (!string.IsNullOrEmpty(pass1) || !string.IsNullOrEmpty(pass2))
@@ -129,6 +190,12 @@ namespace Proyecto_IS_Sistema_De_Tickets
                         passwordPlano: passOpcional
                     );
 
+                    // primero borro permisos sueltos y los vuelvo a poner
+                    var upRepo = new DAO.UsuarioPermisoRepository();
+                    upRepo.QuitarPermisoAUsuario(_usuarioId.Value);   // tu método que borra todos
+                    foreach (var pid in permisosIds)
+                        upRepo.AsignarPermisoAUsuario(_usuarioId.Value, pid);
+
                     MessageBox.Show("Usuario actualizado.");
                     this.Close();
                 }
@@ -137,6 +204,56 @@ namespace Proyecto_IS_Sistema_De_Tickets
             {
                 MessageBox.Show("Error: " + ex.Message);
             }
+        }
+
+        // mete en el set este permiso y todos sus hijos
+        private void AplanarPermisoComponent(PermisoComponent comp, HashSet<int> set)
+        {
+            if (comp == null) return;
+
+            if (!set.Contains(comp.Id))
+                set.Add(comp.Id);
+
+            if (comp is PermisoCompuesto pc && pc.Hijos != null)
+            {
+                foreach (var h in pc.Hijos)
+                    AplanarPermisoComponent(h, set);
+            }
+        }
+
+
+        private void JuntarPermisosRecursivo(BE.PermisoComponent perm, HashSet<int> destino)
+        {
+            destino.Add(perm.Id);
+            if (perm is BE.PermisoCompuesto comp)
+            {
+                foreach (var h in comp.Hijos)
+                    JuntarPermisosRecursivo(h, destino);
+            }
+        }
+
+
+        private void LeerNodoTildado(TreeNode nodo, List<int> rolesIds, List<int> permisosIds)
+        {
+            if (nodo.Checked && nodo.Tag is string tag)
+            {
+                if (tag.StartsWith("ROL_"))
+                {
+                    int id = int.Parse(tag.Substring(4));
+                    if (!rolesIds.Contains(id))
+                        rolesIds.Add(id);
+                }
+                else if (tag.StartsWith("PERM_"))
+                {
+                    int id = int.Parse(tag.Substring(5));
+                    if (!permisosIds.Contains(id))
+                        permisosIds.Add(id);
+                }
+            }
+
+            // recursivo por si es un permiso compuesto
+            foreach (TreeNode h in nodo.Nodes)
+                LeerNodoTildado(h, rolesIds, permisosIds);
         }
 
 
@@ -148,17 +265,25 @@ namespace Proyecto_IS_Sistema_De_Tickets
                 Application.Restart();
                 return;
             }
-            CargarRolesDesdeBD();
+            if (!SessionManager.Instancia.TienePermiso("Usuario.Modificar"))
+            {
+                MessageBox.Show("No contás con permiso para administrar usuarios.");
+                Close();
+                return;
+            }
+
+            CargarTreeRolesYPermisos();
+
             if (_modo == ModoFormulario.Alta)
             {
                 lblGestionUsuario.Tag = "NEW";
                 chkActivo.Checked = true;
-    
+
             }
             else
             {
                 lblGestionUsuario.Tag = "EDIT";
-                
+
                 CargarUsuarioEnControles(_usuarioId.Value);
             }
             txtContraseña.UseSystemPasswordChar = true;
@@ -170,18 +295,58 @@ namespace Proyecto_IS_Sistema_De_Tickets
                 txtConfirmarContraseña.UseSystemPasswordChar = !ver;
             };
             // Mostrar/ocultar según rol
-            bool esAdmin = SessionManager.Instancia.TieneRol("Administrador");
-            var roles = string.Join(", ", SessionManager.Instancia.UsuarioActual.Roles.Select(r => r.Nombre));
-            this.Text = $"FormPrueba - {SessionManager.Instancia.UsuarioActual.Email} [{roles}]";
+            var puedeCrear = SessionManager.Instancia.UsuarioActual.TienePermiso("Usuario.Alta");
+            this.Text = puedeCrear
+                ? "Gestión de Usuarios - Puede crear usuarios"
+                : "Gestión de Usuarios - Solo lectura";
 
+            
 
         }
 
+        private void CargarTreeRolesYPermisos()
+        {
+            tvPermisos.Nodes.Clear();
+
+            // 1) nodo de roles
+            var nodoRoles = new TreeNode("Roles");
+            var roles = UserAdminService.Instancia.ListarRoles();
+            foreach (var r in roles)
+            {
+                nodoRoles.Nodes.Add(new TreeNode(r.Nombre)
+                {
+                    Tag = "ROL_" + r.Id
+                });
+            }
+            tvPermisos.Nodes.Add(nodoRoles);
+
+            // 2) nodo de permisos
+            var nodoPerms = new TreeNode("Permisos");
+            var arbolPerms = PermisoService.Instancia.ObtenerArbolPermisos();
+            foreach (var p in arbolPerms)
+            {
+                nodoPerms.Nodes.Add(CrearNodoPermiso(p));
+            }
+            tvPermisos.Nodes.Add(nodoPerms);
+
+            tvPermisos.ExpandAll();
+        }
+
+        private TreeNode CrearNodoPermiso(BE.PermisoNodo p)
+        {
+            var n = new TreeNode(p.Nombre)
+            {
+                Tag = "PERM_" + p.Id
+            };
+            foreach (var h in p.Hijos)
+                n.Nodes.Add(CrearNodoPermiso(h));
+            return n;
+        }
 
 
         private void CargarUsuarioEnControles(int id)
         {
-            var u = UserAdminService.Instancia.ObtenerUsuarioCompleto(id); 
+            var u = UserAdminService.Instancia.ObtenerUsuarioCompleto(id);
             if (u == null)
             {
                 MessageBox.Show("Usuario no encontrado.");
@@ -193,34 +358,91 @@ namespace Proyecto_IS_Sistema_De_Tickets
             txtNombre.Text = u.Nombre;
             chkActivo.Checked = u.Activo;
 
-            // borro todos los checks
-            for (int i = 0; i < clbRoles.Items.Count; i++)
-                clbRoles.SetItemChecked(i, false);
+            MarcarTreeSegunUsuario(id);
 
-            // marco los roles que tiene el usuario
-            foreach (var rolDelUsuario in u.Roles)
+        }
+
+        private void MarcarTreeSegunUsuario(int usuarioId)
+        {
+            // roles del usuario
+            var u = UserAdminService.Instancia.ObtenerUsuarioCompleto(usuarioId);
+            var rolesUsuario = u.Roles.Select(r => r.Id).ToHashSet();
+
+            // permisos directos del usuario (si tenés tabla UsuarioPermiso)
+            var permisosDirectos = new DAO.UsuarioPermisoRepository().GetPermisosDirectos(usuarioId).Select(p => p.Id).ToHashSet();
+
+            foreach (TreeNode raiz in tvPermisos.Nodes)
             {
-                for (int i = 0; i < clbRoles.Items.Count; i++)
+                foreach (TreeNode hijo in raiz.Nodes)
                 {
-                    var rolItem = (Rol)clbRoles.Items[i];
-                    if (rolItem.Id == rolDelUsuario.Id)
-                        clbRoles.SetItemChecked(i, true);
+                    if (hijo.Tag is string tag)
+                    {
+                        if (tag.StartsWith("ROL_"))
+                        {
+                            int rolId = int.Parse(tag.Substring(4));
+                            hijo.Checked = rolesUsuario.Contains(rolId);
+                        }
+                        else if (tag.StartsWith("PERM_"))
+                        {
+                            int permId = int.Parse(tag.Substring(5));
+                            hijo.Checked = permisosDirectos.Contains(permId);
+                        }
+                    }
+
+                    // por si hay permisos anidados
+                    MarcarRecursivoPermisos(hijo, permisosDirectos);
                 }
             }
-        }      
-
-        private void CargarRolesDesdeBD()
-        {
-            clbRoles.CheckOnClick = true;
-            clbRoles.Items.Clear();
-            var roles = UserAdminService.Instancia.ListarRoles();
-            foreach (var r in roles)
-                clbRoles.Items.Add(r, false);
         }
+
+        private void MarcarRecursivoPermisos(TreeNode nodo, HashSet<int> permisosDirectos)
+        {
+            foreach (TreeNode h in nodo.Nodes)
+            {
+                if (h.Tag is string tag && tag.StartsWith("PERM_"))
+                {
+                    int permId = int.Parse(tag.Substring(5));
+                    h.Checked = permisosDirectos.Contains(permId);
+                }
+                MarcarRecursivoPermisos(h, permisosDirectos);
+            }
+        }
+
+        // arma un diccionario {permisoId -> PermisoNodo} para poder buscar rápido
+        private void IndexarPermisos(IEnumerable<PermisoNodo> nodos, Dictionary<int, PermisoNodo> dic)
+        {
+            foreach (var n in nodos)
+            {
+                if (!dic.ContainsKey(n.Id))
+                    dic.Add(n.Id, n);
+
+                if (n.Hijos != null && n.Hijos.Count > 0)
+                    IndexarPermisos(n.Hijos, dic);
+            }
+        }
+
+        // dice si un permiso (buscadoId) está adentro del permiso raiz (raizId) usando el diccionario
+        private bool PermisoEstaDentroDe(int raizId, int buscadoId, Dictionary<int, PermisoNodo> dic)
+        {
+            if (raizId == buscadoId)
+                return true;
+
+            if (!dic.TryGetValue(raizId, out var nodo))
+                return false;
+
+            foreach (var h in nodo.Hijos)
+            {
+                if (PermisoEstaDentroDe(h.Id, buscadoId, dic))
+                    return true;
+            }
+
+            return false;
+        }
+
 
         private void btnCancelar_Click(object sender, EventArgs e)
         {
-             this.Close();
+            this.Close();
         }
     }
 }

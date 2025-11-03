@@ -28,7 +28,6 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.clbRoles = new System.Windows.Forms.CheckedListBox();
             this.chkMostrarContraseña = new System.Windows.Forms.CheckBox();
             this.txtEmail = new System.Windows.Forms.TextBox();
             this.lblEmail = new System.Windows.Forms.Label();
@@ -42,16 +41,8 @@
             this.lblContraseña = new System.Windows.Forms.Label();
             this.txtConfirmarContraseña = new System.Windows.Forms.TextBox();
             this.lblGestionUsuario = new System.Windows.Forms.Label();
+            this.tvPermisos = new System.Windows.Forms.TreeView();
             this.SuspendLayout();
-            // 
-            // clbRoles
-            // 
-            this.clbRoles.CheckOnClick = true;
-            this.clbRoles.FormattingEnabled = true;
-            this.clbRoles.Location = new System.Drawing.Point(174, 67);
-            this.clbRoles.Name = "clbRoles";
-            this.clbRoles.Size = new System.Drawing.Size(136, 124);
-            this.clbRoles.TabIndex = 27;
             // 
             // chkMostrarContraseña
             // 
@@ -67,7 +58,7 @@
             // 
             this.txtEmail.Location = new System.Drawing.Point(27, 67);
             this.txtEmail.Name = "txtEmail";
-            this.txtEmail.Size = new System.Drawing.Size(100, 20);
+            this.txtEmail.Size = new System.Drawing.Size(118, 20);
             this.txtEmail.TabIndex = 16;
             // 
             // lblEmail
@@ -81,7 +72,7 @@
             // 
             // btnCancelar
             // 
-            this.btnCancelar.Location = new System.Drawing.Point(244, 212);
+            this.btnCancelar.Location = new System.Drawing.Point(283, 250);
             this.btnCancelar.Name = "btnCancelar";
             this.btnCancelar.Size = new System.Drawing.Size(75, 23);
             this.btnCancelar.TabIndex = 26;
@@ -93,12 +84,12 @@
             // 
             this.txtNombre.Location = new System.Drawing.Point(27, 107);
             this.txtNombre.Name = "txtNombre";
-            this.txtNombre.Size = new System.Drawing.Size(100, 20);
+            this.txtNombre.Size = new System.Drawing.Size(118, 20);
             this.txtNombre.TabIndex = 18;
             // 
             // btnGuardar
             // 
-            this.btnGuardar.Location = new System.Drawing.Point(163, 212);
+            this.btnGuardar.Location = new System.Drawing.Point(202, 250);
             this.btnGuardar.Name = "btnGuardar";
             this.btnGuardar.Size = new System.Drawing.Size(75, 23);
             this.btnGuardar.TabIndex = 25;
@@ -129,7 +120,7 @@
             // 
             this.txtContraseña.Location = new System.Drawing.Point(27, 145);
             this.txtContraseña.Name = "txtContraseña";
-            this.txtContraseña.Size = new System.Drawing.Size(100, 20);
+            this.txtContraseña.Size = new System.Drawing.Size(118, 20);
             this.txtContraseña.TabIndex = 20;
             // 
             // lblConfirmarContraseña
@@ -154,26 +145,34 @@
             // 
             this.txtConfirmarContraseña.Location = new System.Drawing.Point(27, 186);
             this.txtConfirmarContraseña.Name = "txtConfirmarContraseña";
-            this.txtConfirmarContraseña.Size = new System.Drawing.Size(100, 20);
+            this.txtConfirmarContraseña.Size = new System.Drawing.Size(118, 20);
             this.txtConfirmarContraseña.TabIndex = 22;
             // 
             // lblGestionUsuario
             // 
             this.lblGestionUsuario.AutoSize = true;
             this.lblGestionUsuario.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblGestionUsuario.Location = new System.Drawing.Point(80, 9);
+            this.lblGestionUsuario.Location = new System.Drawing.Point(119, 9);
             this.lblGestionUsuario.Name = "lblGestionUsuario";
             this.lblGestionUsuario.Size = new System.Drawing.Size(158, 24);
             this.lblGestionUsuario.TabIndex = 29;
             this.lblGestionUsuario.Text = "Gestión Usuario";
             // 
+            // tvPermisos
+            // 
+            this.tvPermisos.CheckBoxes = true;
+            this.tvPermisos.Location = new System.Drawing.Point(202, 36);
+            this.tvPermisos.Name = "tvPermisos";
+            this.tvPermisos.Size = new System.Drawing.Size(196, 203);
+            this.tvPermisos.TabIndex = 30;
+            // 
             // FormGestionDeUsuario
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(365, 296);
+            this.ClientSize = new System.Drawing.Size(445, 296);
+            this.Controls.Add(this.tvPermisos);
             this.Controls.Add(this.lblGestionUsuario);
-            this.Controls.Add(this.clbRoles);
             this.Controls.Add(this.chkMostrarContraseña);
             this.Controls.Add(this.txtEmail);
             this.Controls.Add(this.lblEmail);
@@ -195,8 +194,6 @@
         }
 
         #endregion
-
-        private System.Windows.Forms.CheckedListBox clbRoles;
         private System.Windows.Forms.CheckBox chkMostrarContraseña;
         private System.Windows.Forms.TextBox txtEmail;
         private System.Windows.Forms.Label lblEmail;
@@ -210,5 +207,6 @@
         private System.Windows.Forms.Label lblContraseña;
         private System.Windows.Forms.TextBox txtConfirmarContraseña;
         private System.Windows.Forms.Label lblGestionUsuario;
+        private System.Windows.Forms.TreeView tvPermisos;
     }
 }

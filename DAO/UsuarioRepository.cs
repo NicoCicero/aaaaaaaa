@@ -162,6 +162,37 @@ namespace DAO
                 cmd.ExecuteNonQuery();
             }
         }
+        public void EliminarUsuario(int usuarioId)
+        {
+            using (var cn = GetConnection())
+            {
+                cn.Open();
+                using (var tx = cn.BeginTransaction())
+                {
+                    try
+                    {
+                        new SqlCommand("DELETE FROM UsuarioPermiso WHERE Usuario_Id = @id;", cn, tx)
+                        { Parameters = { new SqlParameter("@id", usuarioId) } }
+                            .ExecuteNonQuery();
+
+                        new SqlCommand("DELETE FROM UsuarioRol WHERE Usuario_Id = @id;", cn, tx)
+                        { Parameters = { new SqlParameter("@id", usuarioId) } }
+                            .ExecuteNonQuery();
+
+                        new SqlCommand("DELETE FROM Usuario WHERE Usuario_Id = @id;", cn, tx)
+                        { Parameters = { new SqlParameter("@id", usuarioId) } }
+                            .ExecuteNonQuery();
+
+                        tx.Commit();
+                    }
+                    catch
+                    {
+                        tx.Rollback();
+                        throw;
+                    }
+                }
+            }
+        }
 
     }
 }

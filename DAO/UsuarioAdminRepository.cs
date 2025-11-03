@@ -172,38 +172,63 @@ namespace DAO
         }
 
         // 👇 NUEVO: reemplazar roles
-        public void ReemplazarRolesUsuario(int usuarioId, IEnumerable<int> rolesIds)
+        public void ReemplazarRolesUsuario(int usuarioId, IEnumerable<int> nuevosRoles)
+        {
+            using (var cn = GetConnection())
+            {
+                cn.Open();
+
+                // borra roles actuales
+                using (var cmdDel = new SqlCommand("DELETE FROM UsuarioRol WHERE Usuario_Id = @uid", cn))
+                {
+                    cmdDel.Parameters.AddWithValue("@uid", usuarioId);
+                    cmdDel.ExecuteNonQuery();
+                }
+
+                // agrega nuevos roles
+                foreach (var rolId in nuevosRoles)
+                {
+                    using (var cmdIns = new SqlCommand("INSERT INTO UsuarioRol (Usuario_Id, Rol_Id) VALUES (@uid, @rid)", cn))
+                    {
+                        cmdIns.Parameters.AddWithValue("@uid", usuarioId);
+                        cmdIns.Parameters.AddWithValue("@rid", rolId);
+                        cmdIns.ExecuteNonQuery();
+                    }
+                }
+            }
+        }
+
+        public void EliminarUsuario(int usuarioId)
         {
             using (var cn = GetConnection())
             {
                 cn.Open();
                 using (var tx = cn.BeginTransaction())
                 {
-                    // borro los que tenía
-                    using (var cmdDel = new SqlCommand("DELETE FROM UsuarioRol WHERE Usuario_Id = @uid;", cn, tx))
+                    try
                     {
-                        cmdDel.Parameters.AddWithValue("@uid", usuarioId);
-                        cmdDel.ExecuteNonQuery();
-                    }
+                        new SqlCommand("DELETE FROM UsuarioPermiso WHERE Usuario_Id = @id;", cn, tx)
+                        { Parameters = { new SqlParameter("@id", usuarioId) } }
+                            .ExecuteNonQuery();
 
-                    // inserto los nuevos
-                    if (rolesIds != null)
+                        new SqlCommand("DELETE FROM UsuarioRol WHERE Usuario_Id = @id;", cn, tx)
+                        { Parameters = { new SqlParameter("@id", usuarioId) } }
+                            .ExecuteNonQuery();
+
+                        new SqlCommand("DELETE FROM Usuario WHERE Usuario_Id = @id;", cn, tx)
+                        { Parameters = { new SqlParameter("@id", usuarioId) } }
+                            .ExecuteNonQuery();
+
+                        tx.Commit();
+                    }
+                    catch
                     {
-                        foreach (var rid in rolesIds)
-                        {
-                            using (var cmdIns = new SqlCommand(
-                                "INSERT INTO UsuarioRol (Usuario_Id, Rol_Id) VALUES (@uid, @rid);", cn, tx))
-                            {
-                                cmdIns.Parameters.AddWithValue("@uid", usuarioId);
-                                cmdIns.Parameters.AddWithValue("@rid", rid);
-                                cmdIns.ExecuteNonQuery();
-                            }
-                        }
+                        tx.Rollback();
+                        throw;
                     }
-
-                    tx.Commit();
                 }
             }
         }
+
     }
 }

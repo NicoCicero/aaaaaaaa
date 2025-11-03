@@ -16,6 +16,12 @@ namespace BE
         public List<Permiso> Permisos { get; set; } = new List<Permiso>(); // si usás permisos finos
         public List<Rol> Roles { get; set; } = new List<Rol>();
 
+        /// <summary>
+        /// Árbol de permisos asociado al usuario logueado.
+        /// </summary>
+        public PermisoComponent PermisosCompuestos { get; set; }
+
+
         public int Id { get; set; }
 
         /// <summary>Email único de login.</summary>
@@ -43,6 +49,15 @@ namespace BE
         /// Datos sensibles cifrados (ej.: DNI). Puede ser null en C# 7.3 aunque no usemos '?'.
         /// </summary>
         public byte[] DatosSensiblesEnc { get; set; }  // null permitido en C# 7.3
+
+        /// <summary>
+        /// Verifica si el usuario cuenta con un permiso determinado consultando el Composite cargado.
+        /// </summary>
+        public bool TienePermiso(string nombrePermiso)
+        {
+            if (PermisosCompuestos == null) return false;
+            return PermisosCompuestos.TienePermiso(nombrePermiso);
+        }
 
         public override string ToString() => $"{Nombre} <{Email}>";
     }

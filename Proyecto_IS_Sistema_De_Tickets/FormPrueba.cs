@@ -40,30 +40,57 @@ namespace Proyecto_IS_Sistema_De_Tickets
                 return;
             }
 
-            bool esAdmin = SessionManager.Instancia.TieneRol("Administrador");
-            var rolesUser = string.Join(", ", SessionManager.Instancia.UsuarioActual.Roles.Select(r => r.Nombre));
-            this.Text = $"FormPrueba - {SessionManager.Instancia.UsuarioActual.Email} [{rolesUser}]";
+            var usuario = SessionManager.Instancia.UsuarioActual;
+            bool puedeGestionarUsuarios = SessionManager.Instancia.TienePermiso("Usuario.Modificar");
+            bool puedeVerBitacora = SessionManager.Instancia.TienePermiso("Bitacora.Ver");
+            bool puedeVerCambios = SessionManager.Instancia.TienePermiso("ControlCambios.Ver");
+            bool puedeCrearTicket = usuario.TienePermiso("Ticket.Crear");
+            bool puedeGestionarPermisos = SessionManager.Instancia.TienePermiso("Permiso.Gestionar");
+
+            // guardo referencia al tab (asumo que es el cuarto o quinto)
+            TabPage _tabPermisos = tabGeneral.TabPages.Count > 4 ? tabGeneral.TabPages[4] : null;
+
+            // si no puede gestionarlos, lo quitamos
+            if (!puedeGestionarPermisos && _tabPermisos != null)
+            {
+                tabGeneral.TabPages.Remove(_tabPermisos);
+            }
+
+            if (puedeGestionarPermisos)
+            {
+                CargarUsuariosConPermisos();
+                CargarRolesYPermisosDisponibles();
+            }
+
+
+            this.Text = $"FormPrueba - {usuario.Email} (Ticket.Crear={(puedeCrearTicket ? "Sí" : "No")})";
 
             // guardo tabs
             _tabRegistrar = tabGeneral.TabPages.Count > 1 ? tabGeneral.TabPages[1] : null;
             _tabBitacora = tabGeneral.TabPages.Count > 2 ? tabGeneral.TabPages[2] : null;
             _tabCambios = tabGeneral.TabPages.Count > 3 ? tabGeneral.TabPages[3] : null;
 
-            if (esAdmin)
+            if (puedeGestionarUsuarios)
             {
                 SetRegistrarVisible(true);
                 CargarGrillaGestionUsuarios();
 
-                CargarEventosBitacoraHardcoded();
-                CargarBitacoraInicial();
+                if (puedeVerBitacora)
+                {
+                    CargarEventosBitacoraHardcoded();
+                    CargarBitacoraInicial();
+                }
 
-                CargarCambiosInicial();
+                if (puedeVerCambios)
+                {
+                    CargarCambiosInicial();
+                }
             }
             else
             {
                 if (_tabRegistrar != null) tabGeneral.TabPages.Remove(_tabRegistrar);
-                if (_tabBitacora != null) tabGeneral.TabPages.Remove(_tabBitacora);
-                if (_tabCambios != null) tabGeneral.TabPages.Remove(_tabCambios);
+                if (!puedeVerBitacora && _tabBitacora != null) tabGeneral.TabPages.Remove(_tabBitacora);
+                if (!puedeVerCambios && _tabCambios != null) tabGeneral.TabPages.Remove(_tabCambios);
                 SetRegistrarVisible(false);
             }
 
@@ -82,6 +109,8 @@ namespace Proyecto_IS_Sistema_De_Tickets
 
             // disparo el idioma por defecto para que todos los forms se pinten
             _idiomaSrv.SeleccionarIdiomaPorDefecto();
+            treeUsuarios.AfterSelect += treeUsuarios_AfterSelect_1;
+
 
         }
 
@@ -130,7 +159,9 @@ namespace Proyecto_IS_Sistema_De_Tickets
 
         private void TabGeneral_SelectedIndexChanged(object sender, EventArgs e)
         {
-            bool esAdmin = SessionManager.Instancia.TieneRol("Administrador");
+            bool puedeGestionarUsuarios = SessionManager.Instancia.TienePermiso("Usuario.Modificar");
+            bool puedeVerBitacora = SessionManager.Instancia.TienePermiso("Bitacora.Ver");
+            bool puedeVerCambios = SessionManager.Instancia.TienePermiso("ControlCambios.Ver");
 
             switch (tabGeneral.SelectedIndex)
             {
@@ -139,9 +170,9 @@ namespace Proyecto_IS_Sistema_De_Tickets
                     break;
 
                 case 1: // 👤 Registrar usuarios
-                    if (!esAdmin)
+                    if (!puedeGestionarUsuarios)
                     {
-                        MessageBox.Show("Solo un Administrador puede gestionar usuarios.");
+                        MessageBox.Show("No contás con permiso para gestionar usuarios.");
                         tabGeneral.SelectedIndex = 0; // vuelve al menú
                         return;
                     }
@@ -152,9 +183,9 @@ namespace Proyecto_IS_Sistema_De_Tickets
                     break;
 
                 case 2: // 📜 Bitácora
-                    if (!esAdmin)
+                    if (!puedeVerBitacora)
                     {
-                        MessageBox.Show("Solo un Administrador puede ver la Bitácora.");
+                        MessageBox.Show("No contás con permiso para ver la Bitácora.");
                         tabGeneral.SelectedIndex = 0;
                         return;
                     }
@@ -164,13 +195,27 @@ namespace Proyecto_IS_Sistema_De_Tickets
                     CargarBitacoraInicial();
                     break;
                 case 3: // 👈 cambios
-                    if (!esAdmin)
+                    if (!puedeVerCambios)
                     {
-                        MessageBox.Show("Solo un Administrador puede ver el Control de Cambios.");
+                        MessageBox.Show("No contás con permiso para ver el Control de Cambios.");
                         tabGeneral.SelectedIndex = 0;
                         return;
                     }
                     CargarCambiosInicial();
+                    break;
+
+                case 4: // o 5, según corresponda
+                    bool puedeGestionarPermisos = SessionManager.Instancia.TienePermiso("Permiso.Gestionar");
+                    if (!puedeGestionarPermisos)
+                    {
+                        MessageBox.Show("No contás con permiso para gestionar permisos.");
+                        tabGeneral.SelectedIndex = 0;
+                        return;
+                    }
+
+                    // si tiene permiso, cargamos el contenido
+                    CargarUsuariosConPermisos();
+                    CargarRolesYPermisosDisponibles();
                     break;
                 default:
                     // En caso de que se agreguen nuevas pestañas y quieras controlar más
@@ -199,6 +244,45 @@ namespace Proyecto_IS_Sistema_De_Tickets
             dgvCambios.AutoGenerateColumns = false;
             dgvCambios.DataSource = datos;
         }
+
+        /// <summary>
+        /// Ejemplo de cómo poblar un TreeView con el árbol completo de permisos.
+        /// El Tag de cada nodo se mapea al Permiso_Id correspondiente.
+        /// </summary>
+        private void CargarPermisosEnTreeView(TreeView tree)
+        {
+            if (tree == null) return;
+
+            tree.BeginUpdate();
+            tree.Nodes.Clear();
+
+            var servicio = PermisoService.Instancia;
+            var arbol = servicio.ObtenerArbolPermisos();
+
+            foreach (var permiso in arbol)
+            {
+                tree.Nodes.Add(CrearNodoTree(permiso));
+            }
+
+            tree.EndUpdate();
+            tree.ExpandAll();
+        }
+
+        private TreeNode CrearNodoTree(PermisoNodo permiso)
+        {
+            var nodo = new TreeNode(permiso.Nombre)
+            {
+                Tag = permiso.Id   // Guardamos el Permiso_Id aquí
+            };
+
+            foreach (var hijo in permiso.Hijos)
+            {
+                nodo.Nodes.Add(CrearNodoTree(hijo));
+            }
+
+            return nodo;
+        }
+
         private void CargarBitacoraInicial()
         {
             var repoInit = new AuditoriaRepository();
@@ -314,17 +398,39 @@ namespace Proyecto_IS_Sistema_De_Tickets
 
         public void CargarGrillaGestionUsuarios()
         {
-            // este método ahora se usa SOLO cuando ya sabemos que es admin
             var usuarios = BL.UserAdminService.Instancia.ListarUsuarios();
-            dgvGestionUsuario.AutoGenerateColumns = true;
-            dgvGestionUsuario.DataSource = usuarios;
 
-            if (dgvGestionUsuario.Columns["Roles"] != null)
-                dgvGestionUsuario.Columns["Roles"].Visible = false;
-            if (dgvGestionUsuario.Columns["Permisos"] != null)
-                dgvGestionUsuario.Columns["Permisos"].Visible = false;
-            if (dgvGestionUsuario.Columns["DatosSensiblesEnc"] != null)
-                dgvGestionUsuario.Columns["DatosSensiblesEnc"].Visible = false;
+            // agrego una columna calculada "Rol"
+            var dt = new DataTable();
+            dt.Columns.Add("Id", typeof(int));
+            dt.Columns.Add("Email", typeof(string));
+            dt.Columns.Add("Nombre", typeof(string));
+            dt.Columns.Add("Rol", typeof(string));
+            dt.Columns.Add("Activo", typeof(bool));
+            dt.Columns.Add("IntentosFallidos", typeof(int));
+
+            foreach (var u in usuarios)
+            {
+                string rolNombre = u.Roles != null && u.Roles.Count > 0
+                    ? string.Join(", ", u.Roles.Select(r => r.Nombre))
+                    : "(sin rol)";
+
+                dt.Rows.Add(u.Id, u.Email, u.Nombre, rolNombre, u.Activo, u.IntentosFallidos);
+            }
+
+            dgvGestionUsuario.AutoGenerateColumns = true;
+            dgvGestionUsuario.DataSource = dt;
+
+            // renombro encabezados
+            dgvGestionUsuario.Columns["Id"].HeaderText = "Id";
+            dgvGestionUsuario.Columns["Email"].HeaderText = "Email";
+            dgvGestionUsuario.Columns["Nombre"].HeaderText = "Nombre";
+            dgvGestionUsuario.Columns["Rol"].HeaderText = "Rol";
+            dgvGestionUsuario.Columns["Activo"].HeaderText = "Activo";
+            dgvGestionUsuario.Columns["IntentosFallidos"].HeaderText = "Intentos Fallidos";
+
+            // ajuste visual
+            dgvGestionUsuario.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
 
         }
 
@@ -509,6 +615,237 @@ namespace Proyecto_IS_Sistema_De_Tickets
         private void FormPrueba_FormClosed(object sender, FormClosedEventArgs e)
         {
             IdiomaManager.Instancia.Desuscribir(this);
+        }
+
+        private void CargarUsuariosConPermisos()
+        {
+            treeUsuarios.Nodes.Clear();
+            var usuarios = BL.UserAdminService.Instancia.ListarUsuarios();
+
+            foreach (var u in usuarios)
+            {
+                var nodoUsuario = new TreeNode($"{u.Nombre} ({u.Email})") { Tag = u.Id };
+
+                // ===== ROLES =====
+                var nodoRoles = new TreeNode("Roles");
+                var roles = u.Roles;    // los que vienen de UsuarioRepository / UserAdminService
+
+                foreach (var rol in roles)
+                {
+                    var nodoRol = new TreeNode(rol.Nombre) { Tag = "ROL_" + rol.Id };
+
+                    // 👇 traigo los permisos que tiene ese rol
+                    var permisosDelRol = BL.PermisoService.Instancia.ObtenerPermisosDeRol(rol.Id);
+                    // permisosDelRol es List<PermisoComponent>
+
+                    foreach (var comp in permisosDelRol)    // puede haber 1 o varios "árboles" raíz
+                    {
+                        nodoRol.Nodes.Add(CrearNodoTreeDesdePermiso(comp));
+                    }
+
+                    nodoRoles.Nodes.Add(nodoRol);
+                }
+
+                nodoUsuario.Nodes.Add(nodoRoles);
+
+                // ===== PERMISOS SUELTOS =====
+                var nodoPermisos = new TreeNode("Permisos");
+
+                // esto tiene que estar en PermisoService, no en el form
+                var permisosSueltos = BL.PermisoService.Instancia.ObtenerPermisosDirectosDeUsuario(u.Id);
+
+                if (permisosSueltos != null)
+                {
+                    foreach (var p in permisosSueltos)
+                    {
+                        nodoPermisos.Nodes.Add(CrearNodoTreeDesdePermiso(p));
+                    }
+                }
+
+                nodoUsuario.Nodes.Add(nodoPermisos);
+
+                treeUsuarios.Nodes.Add(nodoUsuario);
+            }
+
+            treeUsuarios.ExpandAll();
+        }
+        
+
+        private TreeNode CrearNodoTreeDesdePermiso(BE.PermisoComponent permiso)
+        {
+            var nodo = new TreeNode(permiso.Nombre)
+            {
+                Tag = "PERM_" + permiso.Id
+            };
+            if (permiso is BE.PermisoCompuesto compuesto)
+            {
+                foreach (var hijo in compuesto.Hijos)
+                    nodo.Nodes.Add(CrearNodoTreeDesdePermiso(hijo));
+            }
+            return nodo;
+        }
+
+        private void CargarRolesYPermisosDisponibles()
+        {
+            treeDisponibles.Nodes.Clear();
+
+            // roles
+            var roles = BL.UserAdminService.Instancia.ListarRoles();
+            var nodoRoles = new TreeNode("Roles disponibles");
+            foreach (var rol in roles)
+                nodoRoles.Nodes.Add(new TreeNode(rol.Nombre) { Tag = "ROL_" + rol.Id });
+
+            treeDisponibles.Nodes.Add(nodoRoles);
+
+            // permisos
+            var permisos = BL.PermisoService.Instancia.ObtenerArbolPermisos();
+            var nodoPermisos = new TreeNode("Permisos disponibles");
+            foreach (var p in permisos)
+                nodoPermisos.Nodes.Add(CrearNodoTreeDesdeNodo(p));
+
+            treeDisponibles.Nodes.Add(nodoPermisos);
+            treeDisponibles.ExpandAll();
+        }
+
+        private TreeNode CrearNodoTreeDesdeNodo(BE.PermisoNodo nodo)
+        {
+            var tn = new TreeNode(nodo.Nombre) { Tag = "PERM_" + nodo.Id };
+            foreach (var hijo in nodo.Hijos)
+                tn.Nodes.Add(CrearNodoTreeDesdeNodo(hijo));
+            return tn;
+        }
+
+        private void btnAsignar_Click(object sender, EventArgs e)
+        {
+            if (treeUsuarios.SelectedNode == null || treeDisponibles.SelectedNode == null)
+            {
+                MessageBox.Show("Seleccioná un usuario y un rol o permiso para asignar.");
+                return;
+            }
+
+            // usuario seleccionado
+            var nodoUsuario = treeUsuarios.SelectedNode;
+            while (nodoUsuario.Parent != null)
+                nodoUsuario = nodoUsuario.Parent;
+
+            int usuarioId = (int)nodoUsuario.Tag;
+
+            // item seleccionado
+            string tag = treeDisponibles.SelectedNode.Tag?.ToString();
+            if (tag == null) return;
+
+            if (tag.StartsWith("ROL_"))
+            {
+                int rolId = int.Parse(tag.Substring(4));
+                new DAO.UsuarioAdminRepository().ReemplazarRolesUsuario(usuarioId, new[] { rolId });
+            }
+            else if (tag.StartsWith("PERM_"))
+            {
+                int permisoId = int.Parse(tag.Substring(5));
+
+                // verificar si ya está incluido en un rol del usuario
+                var permisosUsuario = BL.PermisoService.Instancia.ObtenerPermisosDeUsuario(usuarioId);
+                if (permisosUsuario.TienePermiso(treeDisponibles.SelectedNode.Text))
+                {
+                    MessageBox.Show("Ese permiso ya está incluido en un rol asignado.");
+                    return;
+                }
+
+                new DAO.UsuarioPermisoRepository().AsignarPermisoAUsuario(usuarioId, permisoId);
+            }
+
+            MessageBox.Show("Asignación realizada con éxito.");
+            CargarUsuariosConPermisos();
+        }
+
+        private void btnQuitar_Click(object sender, EventArgs e)
+        {
+            if (treeUsuarios.SelectedNode == null)
+            {
+                MessageBox.Show("Seleccioná un rol o permiso del usuario para quitar.");
+                return;
+            }
+
+            TreeNode nodo = treeUsuarios.SelectedNode;
+            TreeNode nodoUsuario = nodo;
+            while (nodoUsuario.Parent != null)
+                nodoUsuario = nodoUsuario.Parent;
+
+            int usuarioId = (int)nodoUsuario.Tag;
+            string tag = nodo.Tag?.ToString();
+            if (tag == null) return;
+
+            if (tag.StartsWith("ROL_"))
+            {
+                int rolId = int.Parse(tag.Substring(4));
+
+                // obtenemos los roles actuales y removemos este
+                var usuarioRepo = new DAO.UsuarioRepository();
+                var rolesActuales = usuarioRepo.GetRoles(usuarioId);
+                var nuevosRoles = rolesActuales.Where(r => r.Id != rolId).Select(r => r.Id).ToList();
+
+                // actualizamos la relación
+                BL.UserAdminService.Instancia.ActualizarRolesUsuario(usuarioId, nuevosRoles);
+
+            }
+            else if (tag.StartsWith("PERM_"))
+            {
+                int permisoId = int.Parse(tag.Substring(5));
+                new DAO.UsuarioPermisoRepository().QuitarPermisoAUsuario(usuarioId, permisoId);
+            }
+
+            MessageBox.Show("Eliminación realizada.");
+            CargarUsuariosConPermisos();
+
+        }
+
+       
+
+        private void treeUsuarios_AfterSelect_1(object sender, TreeViewEventArgs e)
+        {
+            // Busco el nodo raíz (el usuario)
+            TreeNode nodo = e.Node;
+            while (nodo.Parent != null)
+                nodo = nodo.Parent;
+
+            if (nodo.Tag is int usuarioId)
+            {
+                lblUsuarioSel.Text = $"Usuario seleccionado: {nodo.Text}";
+                lblUsuarioSel.Tag = usuarioId; // guardo el id para reutilizar
+            }
+        }
+
+        private void btnEliminar_Click(object sender, EventArgs e)
+        {
+            if (dgvGestionUsuario.CurrentRow == null)
+            {
+                MessageBox.Show("Seleccioná un usuario primero.");
+                return;
+            }
+
+            var fila = dgvGestionUsuario.CurrentRow;
+            int usuarioId = Convert.ToInt32(fila.Cells["Id"].Value);
+            string email = fila.Cells["Email"].Value.ToString();
+
+            var confirmar = MessageBox.Show(
+                $"¿Seguro que querés eliminar al usuario '{email}'?",
+                "Confirmar eliminación",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning);
+
+            if (confirmar != DialogResult.Yes)
+                return;
+
+            try
+            {
+                BL.UserAdminService.Instancia.EliminarUsuario(usuarioId);
+                MessageBox.Show("Usuario eliminado correctamente.");
+                CargarGrillaGestionUsuarios();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al eliminar el usuario: " + ex.Message);
+            }
         }
     }
 }

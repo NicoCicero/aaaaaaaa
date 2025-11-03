@@ -30,6 +30,15 @@ namespace BL
             SesionActual = null;
         }
 
+        /// <summary>
+        /// Verifica si el usuario actual cuenta con un permiso específico.
+        /// </summary>
+        public bool TienePermiso(string nombrePermiso)
+        {
+            if (UsuarioActual == null) return false;
+            return UsuarioActual.TienePermiso(nombrePermiso);
+        }
+
         public bool TieneRol(string nombreRol)
         {
             if (UsuarioActual == null || UsuarioActual.Roles == null) return false;
