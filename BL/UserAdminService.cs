@@ -91,6 +91,7 @@ namespace BL
             raw.UpdateUsuarioDVH(nuevoId, dvh);
             // DVV de la tabla
             VerificadorIntegridadService.Instancia.RecalcularDVV_Usuario();
+            VerificadorIntegridadService.Instancia.RecalcularDVV_UsuarioRol();
 
 
             return nuevoId;
