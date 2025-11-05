@@ -207,10 +207,13 @@ namespace DAO
                 // agrega nuevos roles
                 foreach (var rolId in nuevosRoles)
                 {
-                    using (var cmdIns = new SqlCommand("INSERT INTO UsuarioRol (Usuario_Id, Rol_Id) VALUES (@uid, @rid)", cn))
+                    using (var cmdIns = new SqlCommand(
+                        "INSERT INTO UsuarioRol (Usuario_Id, Rol_Id, DVH) VALUES (@uid, @rid, @dvh)", cn))
                     {
                         cmdIns.Parameters.AddWithValue("@uid", usuarioId);
                         cmdIns.Parameters.AddWithValue("@rid", rolId);
+                        var dvh = HashHelperDAL.Sha256($"{usuarioId}|{rolId}");
+                        cmdIns.Parameters.AddWithValue("@dvh", dvh);
                         cmdIns.ExecuteNonQuery();
                     }
                 }
