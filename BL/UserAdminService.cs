@@ -84,7 +84,17 @@ namespace BL
                 usuarioId: usuarioActualId
             );
 
+            // DVH fila creada
+            var raw = new DAO.DvRawRepository();
+            var row = raw.SelectUsuarioByIdRaw(nuevoId);
+            var dvh = VerificadorIntegridadService.Instancia.CalcularDVHUsuario(row);
+            raw.UpdateUsuarioDVH(nuevoId, dvh);
+            // DVV de la tabla
+            VerificadorIntegridadService.Instancia.RecalcularDVV_Usuario();
+
+
             return nuevoId;
+
         }
 
         // =============== MODIFICACIÓN ===============
@@ -115,6 +125,9 @@ namespace BL
 
             // 3. actualizo roles en BD
             _repo.ReemplazarRolesUsuario(id, rolesNuevos);
+
+            VerificadorIntegridadService.Instancia.RecalcularDVV_UsuarioRol();
+
 
             // 4. contraseña opcional
             bool cambioContraseña = false;
@@ -196,6 +209,14 @@ namespace BL
                     usuarioId: usuarioActualId
                 );
             }
+
+            var raw = new DAO.DvRawRepository();
+            var row = raw.SelectUsuarioByIdRaw(id);
+            var dvh = VerificadorIntegridadService.Instancia.CalcularDVHUsuario(row);
+            raw.UpdateUsuarioDVH(id, dvh);
+            
+            VerificadorIntegridadService.Instancia.RecalcularDVV_Usuario();
+
         }
 
         // =============== HELPERS ===============
@@ -230,7 +251,7 @@ namespace BL
             if (!SessionManager.Instancia.TienePermiso("Usuario.Modificar"))
                 throw new UnauthorizedAccessException("No contás con permiso para modificar roles de usuario.");
 
-            _repo.ReemplazarRolesUsuario(usuarioId, nuevosRoles);
+            
 
             // Registramos el cambio
             int? usuarioActualId = SessionManager.Instancia.UsuarioActual?.Id;
@@ -243,6 +264,19 @@ namespace BL
                 valorNuevo: string.Join(",", nuevosRoles),
                 usuarioId: usuarioActualId
             );
+
+            _repo.ReemplazarRolesUsuario(usuarioId, nuevosRoles);
+
+            // Setear DVH por cada fila actual de UsuarioRol del usuario
+            var raw = new DAO.DvRawRepository();
+            foreach (var rolId in nuevosRoles)
+            {
+                var dvh = BL.HashHelper.Sha256($"{usuarioId}|{rolId}");
+                raw.UpdateUsuarioRolDVH(usuarioId, rolId, dvh);
+            }
+
+            // Luego DVV de la tabla
+            BL.VerificadorIntegridadService.Instancia.RecalcularDVV_UsuarioRol();
         }
 
         public void EliminarUsuario(int usuarioId)
@@ -265,7 +299,36 @@ namespace BL
                 valorNuevo: null,
                 usuarioId: actual?.Id
             );
+
+            // Recalcular DVV de tablas afectadas
+            VerificadorIntegridadService.Instancia.RecalcularDVV_Usuario();
+            VerificadorIntegridadService.Instancia.RecalcularDVV_UsuarioRol();
+            VerificadorIntegridadService.Instancia.RecalcularDVV_UsuarioPermiso();
+
         }
+        // BL
+        public void BajaLogicaUsuario(int usuarioId)
+        {
+            if (!SessionManager.Instancia.TienePermiso("Usuario.Baja"))
+                throw new UnauthorizedAccessException();
+            _repo.ActualizarUsuarioActivo(usuarioId, false);
+            new SesionRepository().CerrarSesionesDeUsuario(usuarioId);
+            // opcional: _repo.QuitarRolesPermisos(usuarioId);
+            // auditoría de cambio
+            _ccRepo.RegistrarCambio("Usuario", usuarioId, "Modificacion", "Activo", "True", "False", SessionManager.Instancia.UsuarioActual?.Id);
+
+            // Recalcular DVH/DVV del usuario afectado
+            var raw = new DAO.DvRawRepository();
+            var row = raw.SelectUsuarioByIdRaw(usuarioId);
+            if (row != null)
+            {
+                var dvh = VerificadorIntegridadService.Instancia.CalcularDVHUsuario(row);
+                raw.UpdateUsuarioDVH(usuarioId, dvh);
+            }
+            VerificadorIntegridadService.Instancia.RecalcularDVV_Usuario();
+
+        }
+
 
     }
 }

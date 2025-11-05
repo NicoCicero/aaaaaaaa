@@ -44,6 +44,9 @@
     <Compile Include="AuditoriaRepository.cs" />
     <Compile Include="ControlCambiosRepository.cs" />
     <Compile Include="DAL.cs" />
+    <Compile Include="DvRawRepository.cs" />
+    <Compile Include="DvvRepository.cs" />
+    <Compile Include="HashHelperDAL.cs" />
     <Compile Include="IdiomaRepository.cs" />
     <Compile Include="PermisoDAO.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

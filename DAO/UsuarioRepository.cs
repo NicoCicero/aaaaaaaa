@@ -87,6 +87,7 @@ namespace DAO
                 cn.Open();
                 cmd.ExecuteNonQuery();
             }
+
         }
 
         public void RegistrarIntentoFallido(string email, int maxIntentos, int minutosBloqueo)
@@ -162,6 +163,7 @@ namespace DAO
                 cmd.ExecuteNonQuery();
             }
         }
+
         public void EliminarUsuario(int usuarioId)
         {
             using (var cn = GetConnection())

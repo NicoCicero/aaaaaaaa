@@ -38,6 +38,7 @@ namespace Proyecto_IS_Sistema_De_Tickets
             this.tabMenuPrincipal = new System.Windows.Forms.TabPage();
             this.cmbIdiomas = new System.Windows.Forms.ComboBox();
             this.tabUsuarios = new System.Windows.Forms.TabPage();
+            this.btnEliminar = new System.Windows.Forms.Button();
             this.btnNuevoRegistro = new System.Windows.Forms.Button();
             this.btnActualizar = new System.Windows.Forms.Button();
             this.dgvGestionUsuario = new System.Windows.Forms.DataGridView();
@@ -80,7 +81,7 @@ namespace Proyecto_IS_Sistema_De_Tickets
             this.treeDisponibles = new System.Windows.Forms.TreeView();
             this.treeUsuarios = new System.Windows.Forms.TreeView();
             this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
-            this.btnEliminar = new System.Windows.Forms.Button();
+            this.button1 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.errorProvider1)).BeginInit();
             this.tabGeneral.SuspendLayout();
             this.tabMenuPrincipal.SuspendLayout();
@@ -161,6 +162,16 @@ namespace Proyecto_IS_Sistema_De_Tickets
             this.tabUsuarios.Text = "Usuarios";
             this.tabUsuarios.UseVisualStyleBackColor = true;
             this.tabUsuarios.Click += new System.EventHandler(this.tabRegistrar_Click);
+            // 
+            // btnEliminar
+            // 
+            this.btnEliminar.Location = new System.Drawing.Point(578, 310);
+            this.btnEliminar.Name = "btnEliminar";
+            this.btnEliminar.Size = new System.Drawing.Size(96, 23);
+            this.btnEliminar.TabIndex = 3;
+            this.btnEliminar.Text = "Eliminar Usuario";
+            this.btnEliminar.UseVisualStyleBackColor = true;
+            this.btnEliminar.Click += new System.EventHandler(this.btnEliminar_Click);
             // 
             // btnNuevoRegistro
             // 
@@ -524,6 +535,7 @@ namespace Proyecto_IS_Sistema_De_Tickets
             // 
             // tabPermisos
             // 
+            this.tabPermisos.Controls.Add(this.button1);
             this.tabPermisos.Controls.Add(this.lblUsuarioSel);
             this.tabPermisos.Controls.Add(this.btnAsignar);
             this.tabPermisos.Controls.Add(this.btnQuitar);
@@ -571,6 +583,7 @@ namespace Proyecto_IS_Sistema_De_Tickets
             this.treeDisponibles.Name = "treeDisponibles";
             this.treeDisponibles.Size = new System.Drawing.Size(213, 377);
             this.treeDisponibles.TabIndex = 1;
+            this.treeDisponibles.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.treeDisponibles_AfterSelect);
             // 
             // treeUsuarios
             // 
@@ -580,15 +593,15 @@ namespace Proyecto_IS_Sistema_De_Tickets
             this.treeUsuarios.TabIndex = 0;
             this.treeUsuarios.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.treeUsuarios_AfterSelect_1);
             // 
-            // btnEliminar
+            // button1
             // 
-            this.btnEliminar.Location = new System.Drawing.Point(578, 310);
-            this.btnEliminar.Name = "btnEliminar";
-            this.btnEliminar.Size = new System.Drawing.Size(96, 23);
-            this.btnEliminar.TabIndex = 3;
-            this.btnEliminar.Text = "Eliminar Usuario";
-            this.btnEliminar.UseVisualStyleBackColor = true;
-            this.btnEliminar.Click += new System.EventHandler(this.btnEliminar_Click);
+            this.button1.Location = new System.Drawing.Point(328, 276);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(108, 23);
+            this.button1.TabIndex = 5;
+            this.button1.Text = "Quitar Permiso";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click_1);
             // 
             // FormPrueba
             // 
@@ -676,5 +689,6 @@ namespace Proyecto_IS_Sistema_De_Tickets
         private System.Windows.Forms.Button btnQuitar;
         private System.Windows.Forms.TreeView treeDisponibles;
         private Button btnEliminar;
+        private Button button1;
     }
 }

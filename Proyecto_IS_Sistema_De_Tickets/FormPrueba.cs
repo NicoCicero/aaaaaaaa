@@ -33,6 +33,7 @@ namespace Proyecto_IS_Sistema_De_Tickets
         private void FormPrueba_Load(object sender, EventArgs e)
         {
             ConfigurarDgvCambios();
+            IdiomaManager.Instancia.Suscribir(this);
             if (SessionManager.Instancia.UsuarioActual == null)
             {
                 MessageBox.Show("La sesión no está activa. Volviendo al login.");
@@ -95,23 +96,30 @@ namespace Proyecto_IS_Sistema_De_Tickets
             }
 
             var idiomas = _idiomaSrv.ListarIdiomas();
-            if (cmbIdiomas != null)
-            {
-                cmbIdiomas.DataSource = idiomas;
-                cmbIdiomas.DisplayMember = "Nombre";   // 👈 propiedad de IdiomaDTO
-                cmbIdiomas.ValueMember = "Codigo";     // 👈 propiedad de IdiomaDTO
+            cmbIdiomas.DataSource = idiomas;
+            cmbIdiomas.DisplayMember = "Nombre";
+            cmbIdiomas.ValueMember = "Codigo";
 
-                // seleccionar por defecto
-                var def = idiomas.FirstOrDefault(i => i.EsPorDefecto);
-                if (def != null)
-                    cmbIdiomas.SelectedValue = def.Codigo;
-            }
+            var codActual = IdiomaManager.Instancia.CodigoActual;
+            if (!string.IsNullOrWhiteSpace(codActual) && idiomas.Any(i => i.Codigo == codActual))
+                cmbIdiomas.SelectedValue = codActual;
+            else
+                cmbIdiomas.SelectedValue = idiomas.FirstOrDefault(i => i.EsPorDefecto)?.Codigo ?? idiomas.First().Codigo;
 
             // disparo el idioma por defecto para que todos los forms se pinten
-            _idiomaSrv.SeleccionarIdiomaPorDefecto();
+
             treeUsuarios.AfterSelect += treeUsuarios_AfterSelect_1;
 
+            dgvGestionUsuario.AllowUserToAddRows = false;
+            dgvGestionUsuario.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dgvGestionUsuario.MultiSelect = false;
+            dgvGestionUsuario.ReadOnly = true;  // si no editás inline
+        }
 
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            IdiomaManager.Instancia.Desuscribir(this);
+            base.OnFormClosed(e);
         }
 
         // este es el MÉTODO que llama el observer
@@ -436,22 +444,31 @@ namespace Proyecto_IS_Sistema_De_Tickets
 
         private void btnActualizar_Click(object sender, EventArgs e)
         {
-            if (dgvGestionUsuario.CurrentRow == null)
+            if (dgvGestionUsuario.CurrentRow == null || dgvGestionUsuario.CurrentRow.Index < 0)
             {
                 MessageBox.Show("Seleccioná un usuario primero.");
                 return;
             }
 
-            var usuario = dgvGestionUsuario.CurrentRow.DataBoundItem as BE.Usuario;
-            if (usuario == null)
+            // Asegurate de tener una columna "Id" visible u oculta
+            var cell = dgvGestionUsuario.CurrentRow.Cells["Id"];
+            if (cell == null || cell.Value == null || !int.TryParse(cell.Value.ToString(), out int usuarioId))
             {
                 MessageBox.Show("No se pudo obtener el usuario seleccionado.");
                 return;
             }
 
+            // Leé el usuario desde la BL (si querés validar existencia)
+            var u = BL.UserAdminService.Instancia.ObtenerUsuarioCompleto(usuarioId);
+            if (u == null)
+            {
+                MessageBox.Show("Usuario no encontrado.");
+                return;
+            }
+
             var f = new FormGestionDeUsuario(
                 FormGestionDeUsuario.ModoFormulario.Edicion,
-                usuarioId: usuario.Id);
+                usuarioId: usuarioId);
 
             f.FormClosed += (_, __) => CargarGrillaGestionUsuarios();
             f.ShowDialog(this);
@@ -751,7 +768,8 @@ namespace Proyecto_IS_Sistema_De_Tickets
                     return;
                 }
 
-                new DAO.UsuarioPermisoRepository().AsignarPermisoAUsuario(usuarioId, permisoId);
+                BL.PermisoService.Instancia.AsignarPermisoDirectoUsuario(usuarioId, permisoId);
+
             }
 
             MessageBox.Show("Asignación realizada con éxito.");
@@ -791,7 +809,8 @@ namespace Proyecto_IS_Sistema_De_Tickets
             else if (tag.StartsWith("PERM_"))
             {
                 int permisoId = int.Parse(tag.Substring(5));
-                new DAO.UsuarioPermisoRepository().QuitarPermisoAUsuario(usuarioId, permisoId);
+                BL.PermisoService.Instancia.QuitarPermisoDirectoUsuario(usuarioId, permisoId);
+
             }
 
             MessageBox.Show("Eliminación realizada.");
@@ -838,7 +857,7 @@ namespace Proyecto_IS_Sistema_De_Tickets
 
             try
             {
-                BL.UserAdminService.Instancia.EliminarUsuario(usuarioId);
+                BL.UserAdminService.Instancia.BajaLogicaUsuario(usuarioId);
                 MessageBox.Show("Usuario eliminado correctamente.");
                 CargarGrillaGestionUsuarios();
             }
@@ -846,6 +865,19 @@ namespace Proyecto_IS_Sistema_De_Tickets
             {
                 MessageBox.Show("Error al eliminar el usuario: " + ex.Message);
             }
+        }
+
+        private void button1_Click_1(object sender, EventArgs e)
+        {
+            BL.VerificadorIntegridadService.Instancia.RecalcularTodo();
+
+            MessageBox.Show("Recalibrado completo");
+
+        }
+
+        private void treeDisponibles_AfterSelect(object sender, TreeViewEventArgs e)
+        {
+
         }
     }
 }

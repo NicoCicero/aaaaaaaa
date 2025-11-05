@@ -38,5 +38,19 @@ namespace DAO
                 cmd.ExecuteNonQuery();
             }
         }
+        public void CerrarSesionesDeUsuario(int usuarioId)
+        {
+            using (var cn = GetConnection())
+            using (var cmd = new SqlCommand(@"
+        UPDATE Sesion
+        SET FinUtc = SYSUTCDATETIME()
+        WHERE Usuario_Id = @uid AND FinUtc IS NULL;", cn))
+            {
+                cmd.Parameters.AddWithValue("@uid", usuarioId);
+                cn.Open();
+                cmd.ExecuteNonQuery();
+            }
+        }
+
     }
 }

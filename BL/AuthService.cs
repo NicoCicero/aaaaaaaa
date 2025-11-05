@@ -20,16 +20,20 @@ namespace BL
         private readonly CryptoManager _crypto = CryptoManager.Instancia;
         private readonly PermisoService _permisos = PermisoService.Instancia;
 
-        private const int MAX_INTENTOS = 5;
-        private const int BLOQUEO_MIN = 15;
+        private const int MAX_INTENTOS = 5;   // igual que antes
+        private const int BLOQUEO_MIN = 15;   // igual que antes
 
         private AuthService() { }
 
+        /// <summary>
+        /// Login tradicional con PBKDF2 + lockout por intentos. 
+        /// (Viejo + NUEVO: recalculo de DVH/DVV tras cambios volátiles en Usuario).
+        /// </summary>
         public bool Login(string email, string password, string ip = null, string userAgent = null)
         {
-            // Traigo BE Usuario y Hash+Salt
+            // Traigo BE Usuario y Hash+Salt (igual que antes)
             var u = _usuarios.GetByEmail(email);
-            var hs = _loginDal.ObtenerHashYSalt(email);
+            var hs = _loginDal.ObtenerHashYSalt(email);  // HashHex + Salt
 
             if (u == null || hs.HashHex == null)
             {
@@ -52,18 +56,30 @@ namespace BL
             var hashIngresado = _crypto.HashPasswordPBKDF2(password, hs.Salt);
             if (!_crypto.ConstantTimeEquals(hs.HashHex, hashIngresado))
             {
+                // === LÓGICA EXISTENTE ===
                 _usuarios.RegistrarIntentoFallido(email, MAX_INTENTOS, BLOQUEO_MIN);
                 _aud.Registrar("LOGIN_FAIL", u.Id, "Hash no coincide");
+
+                // === NUEVO === (sin romper capas):
+                // IntentosFallidos (y quizá BloqueadoHasta) cambiaron -> DVH de la fila y luego DVV de Usuario
+                RecalcularDVHUsuarioFila(u.Id);
+                VerificadorIntegridadService.Instancia.RecalcularDVV_Usuario();
+
                 return false;
             }
 
-            // OK → reseteo intentos y abro sesión
-            _usuarios.RegistrarLoginOk(u.Id);
+            // === OK === → reseteo intentos, seteo UltLogin, etc. (tu repo ya lo hacía)
+            _usuarios.RegistrarLoginOk(u.Id);  // mantiene tu flujo original :contentReference[oaicite:1]{index=1}
 
-            // roles del usuario (para UI)
+            // === NUEVO === DVH/DVV tras cambios de UltLogin/Intentos/Bloqueo
+            RecalcularDVHUsuarioFila(u.Id);
+            VerificadorIntegridadService.Instancia.RecalcularDVV_Usuario();
+
+            // Cargar roles y permisos compuestos para la UI (igual que antes)
             u.Roles = _usuarios.GetRoles(u.Id);
             u.PermisosCompuestos = _permisos.ObtenerPermisosDeUsuario(u.Id);
 
+            // Abrir sesión (igual que antes)
             var s = new Sesion
             {
                 Id = Guid.NewGuid(),
@@ -79,6 +95,9 @@ namespace BL
             return true;
         }
 
+        /// <summary>
+        /// Cierra la sesión actual (sin cambios, solo orden de limpieza/auditoría).
+        /// </summary>
         public void Logout()
         {
             var s = SessionManager.Instancia.SesionActual;
@@ -90,6 +109,20 @@ namespace BL
                 _aud.Registrar("LOGOUT", u != null ? (int?)u.Id : null, $"Sesion={s.Id}");
             }
             SessionManager.Instancia.Clear();
+        }
+
+        // ============ Helpers internos (NUEVO) ============
+
+        /// <summary>
+        /// Recalcula el DVH de la fila Usuario indicada usando la misma fórmula que valida tu servicio
+        /// y lo persiste a través de la DAO raw. No rompe 4 capas (BL orquesta, DAO solo persiste).
+        /// </summary>
+        private void RecalcularDVHUsuarioFila(int usuarioId)
+        {
+            var dvRepo = new DvRawRepository();
+            var row = dvRepo.SelectUsuarioByIdRaw(usuarioId); // lee columnas crudas de Usuario
+            var dvh = VerificadorIntegridadService.Instancia.CalcularDVHUsuario(row);
+            dvRepo.UpdateUsuarioDVH(usuarioId, dvh);
         }
     }
 }

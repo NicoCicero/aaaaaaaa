@@ -20,11 +20,13 @@ namespace BL
 
             // fallback
             foreach (var clave in todasLasClaves)
-            {
                 if (!traducciones.ContainsKey(clave))
                     traducciones[clave] = $"[{clave}]";
-            }
 
+            // ✅ guardar el código actual antes o después de Notificar (da igual)
+            IdiomaManager.Instancia.SetCodigoActual(codigo);
+
+            // notificar a todos los forms suscriptos
             IdiomaManager.Instancia.Notificar(traducciones);
         }
 
@@ -35,7 +37,7 @@ namespace BL
                 SeleccionarIdioma(def.Codigo);
         }
 
-        // 👇 ESTA es la que usa el ComboBox
+        //  ESTA es la que usa el ComboBox
         public List<Idioma> ListarIdiomas()
         {
             var raws = _idiomaRepo.ListarIdiomasRaw();

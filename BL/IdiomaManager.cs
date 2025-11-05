@@ -46,5 +46,14 @@ namespace BL
         {
             return _ultimaTraduccion;
         }
+
+        private string _codigoActual;
+        public string CodigoActual => _codigoActual;
+
+        // Lo usa IdiomaService para setear el idioma elegido
+        internal void SetCodigoActual(string codigo)
+        {
+            _codigoActual = codigo;
+        }
     }
 }

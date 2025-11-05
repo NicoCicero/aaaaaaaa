@@ -43,21 +43,44 @@ namespace Proyecto_IS_Sistema_De_Tickets
             string sql = AdminSeedHelper.BuildUpdateAdminSql("admin@sistema.com", "Admin123!");
             Console.WriteLine(sql);
 
-            // 1) cargar idiomas al combo (si lo tenés, si no, escondé el combo)
             var idiomas = _idiomaSrv.ListarIdiomas();
-            if (cmbIdiomas != null)
-            {
-                cmbIdiomas.DataSource = idiomas;
-                cmbIdiomas.DisplayMember = "Nombre";
-                cmbIdiomas.ValueMember = "Codigo";
+            cmbIdiomas.DataSource = idiomas;
+            cmbIdiomas.DisplayMember = "Nombre";
+            cmbIdiomas.ValueMember = "Codigo";
 
-                var def = idiomas.FirstOrDefault(i => i.EsPorDefecto);
-                if (def != null)
-                    cmbIdiomas.SelectedValue = def.Codigo;
+            // ⬇️ Respetar el idioma actual si ya hay uno elegido
+            var codActual = IdiomaManager.Instancia.CodigoActual;
+
+            if (!string.IsNullOrWhiteSpace(codActual) && idiomas.Any(i => i.Codigo == codActual))
+                cmbIdiomas.SelectedValue = codActual;
+            else
+                cmbIdiomas.SelectedValue = idiomas.FirstOrDefault(i => i.EsPorDefecto)?.Codigo ?? idiomas.First().Codigo;
+
+            try
+            {
+                var (ok, detalle) = BL.VerificadorIntegridadService.Instancia.ValidarTodo();
+                if (!ok)
+                {
+                    var r = MessageBox.Show(
+                        "Se detectó una inconsistencia de integridad (DVH/DVV).\n\n" +
+                        detalle + "\n\n" +
+                        "¿Deseás continuar de todas formas?",
+                        "Integridad de datos",
+                        MessageBoxButtons.YesNo,
+                        MessageBoxIcon.Warning);
+
+                    if (r == DialogResult.No)
+                    {
+                        Application.Exit();
+                        return;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al validar integridad: " + ex.Message);
             }
 
-            // 2) aplicar idioma por defecto
-            _idiomaSrv.SeleccionarIdiomaPorDefecto();
 
         }
 
@@ -159,7 +182,7 @@ namespace Proyecto_IS_Sistema_De_Tickets
         private void cmbIdiomas_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (cmbIdiomas.SelectedValue is string cod && !string.IsNullOrWhiteSpace(cod))
-                _idiomaSrv.SeleccionarIdioma(cod);
+                _idiomaSrv.SeleccionarIdioma(cod); // esto dispara Notificar y setea el CodigoActual
         }
 
 

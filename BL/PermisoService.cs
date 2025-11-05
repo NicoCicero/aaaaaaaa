@@ -243,6 +243,31 @@ namespace BL
             return dao.GetPermisosDirectos(usuarioId);
         }
 
+        public void AsignarPermisoDirectoUsuario(int usuarioId, int permisoId)
+        {
+            var repo = new DAO.UsuarioPermisoRepository();
+            repo.AsignarPermisoAUsuario(usuarioId, permisoId);
+
+            // DVH de la nueva fila y luego DVV de la tabla
+            var raw = new DAO.DvRawRepository();
+            var dvhUP = BL.HashHelper.Sha256($"{usuarioId}|{permisoId}");
+            raw.UpdateUsuarioPermisoDVH(usuarioId, permisoId, dvhUP);
+
+            VerificadorIntegridadService.Instancia.RecalcularDVV_UsuarioPermiso();
+        }
+
+        public void QuitarPermisoDirectoUsuario(int usuarioId, int permisoId)
+        {
+            var repo = new DAO.UsuarioPermisoRepository();
+            repo.QuitarPermisoAUsuario(usuarioId, permisoId);
+
+            // al borrar no hay DVH que setear; solo DVV de la tabla
+            VerificadorIntegridadService.Instancia.RecalcularDVV_UsuarioPermiso();
+        }
+
+
+
+
         #endregion
     }
 }

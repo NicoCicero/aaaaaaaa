@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -36,6 +37,19 @@ namespace DAO
                 return cmd.ExecuteScalar() != null;
             }
         }
+        // DAO
+        public void ActualizarUsuarioActivo(int id, bool activo)
+        {
+            using (var cn = GetConnection())
+            using (var cmd = new SqlCommand("UPDATE Usuario SET Activo=@a WHERE Usuario_Id=@id", cn))
+            {
+                cmd.Parameters.AddWithValue("@a", activo);
+                cmd.Parameters.AddWithValue("@id", id);
+                cn.Open();
+                cmd.ExecuteNonQuery();
+            }
+        }
+
 
         public int InsertUsuario(string email, string nombre, string hashHex, byte[] salt, bool activo, IEnumerable<int> rolesIds)
         {
@@ -67,14 +81,19 @@ namespace DAO
                             foreach (var rid in rolesIds)
                             {
                                 using (var cmd = new SqlCommand(
-                                    "INSERT INTO UsuarioRol (Usuario_Id, Rol_Id) VALUES (@uid, @rid);", cn, tx))
+                                    "INSERT INTO UsuarioRol (Usuario_Id, Rol_Id , DVH ) VALUES (@uid, @rid , @DVH);", cn, tx))
                                 {
-                                    cmd.Parameters.AddWithValue("@uid", newId);
+                                    var dvh = HashHelperDAL.Sha256($"{newId}|{rid}"); 
+
+                                        cmd.Parameters.AddWithValue("@uid", newId);
+                                        cmd.Parameters.AddWithValue("@DVH", dvh);
                                     cmd.Parameters.AddWithValue("@rid", rid);
                                     cmd.ExecuteNonQuery();
                                 }
                             }
                         }
+
+
 
                         tx.Commit();
                         return newId;
@@ -152,7 +171,7 @@ namespace DAO
             }
         }
 
-        // 👇 NUEVO: cambiar password
+        // NUEVO: cambiar password
         public void UpdateUsuarioPassword(int id, string hashHex, byte[] salt)
         {
             using (var cn = GetConnection())
@@ -171,7 +190,7 @@ namespace DAO
             }
         }
 
-        // 👇 NUEVO: reemplazar roles
+        // NUEVO: reemplazar roles
         public void ReemplazarRolesUsuario(int usuarioId, IEnumerable<int> nuevosRoles)
         {
             using (var cn = GetConnection())
