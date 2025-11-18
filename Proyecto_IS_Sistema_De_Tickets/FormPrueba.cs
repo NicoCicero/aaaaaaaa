@@ -489,8 +489,8 @@ namespace Proyecto_IS_Sistema_De_Tickets
 
         private void btnFiltrarCambios_Click(object sender, EventArgs e)
         {
-            int? id = int.TryParse(txtCambioUsuarioId.Text, out var vId) ? vId : (int?)null;
-            int? usuarioId = int.TryParse(txtCambioId.Text, out var vUid) ? vUid : (int?)null;
+            int? id = int.TryParse(txtCambioId.Text, out var vId) ? vId : (int?)null;
+            int? usuarioId = int.TryParse(txtCambioUsuarioId.Text, out var vUid) ? vUid : (int?)null;
             string entidad = string.IsNullOrWhiteSpace(txtCambioEntidad.Text) ? null : txtCambioEntidad.Text.Trim();
             int? entidadId = int.TryParse(txtCambioEntidadId.Text, out var vEid) ? vEid : (int?)null;
             string campo = string.IsNullOrWhiteSpace(txtCambioCampo.Text) ? null : txtCambioCampo.Text.Trim();

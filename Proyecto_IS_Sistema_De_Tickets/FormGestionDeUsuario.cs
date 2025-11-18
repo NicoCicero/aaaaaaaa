@@ -25,6 +25,7 @@ namespace Proyecto_IS_Sistema_De_Tickets
 
             IdiomaManager.Instancia.Suscribir(this);
             tvPermisos.AfterCheck += TvPermisos_AfterCheck;
+            tvPermisos.BeforeCheck += TvPermisos_BeforeCheck;
         }
         public enum ModoFormulario
         {
@@ -147,13 +148,8 @@ namespace Proyecto_IS_Sistema_De_Tickets
 
                     int nuevoId = UserAdminService.Instancia.CrearUsuario(email, nombre, pass1, activo, rolesIds);
 
-                    // si tildó permisos sueltos, los guardo
-                    if (permisosIds.Count > 0)
-                    {
-                        var upRepo = new DAO.UsuarioPermisoRepository();
-                        foreach (var pid in permisosIds)
-                            upRepo.AsignarPermisoAUsuario(nuevoId, pid);
-                    }
+                    // permisos directos del usuario
+                    PermisoService.Instancia.ReemplazarPermisosDirectosUsuario(nuevoId, permisosIds);
 
                     MessageBox.Show("Usuario creado. Id=" + nuevoId);
                     this.Close();
@@ -192,11 +188,8 @@ namespace Proyecto_IS_Sistema_De_Tickets
                         passwordPlano: passOpcional
                     );
 
-                    // primero borro permisos sueltos y los vuelvo a poner
-                    var upRepo = new DAO.UsuarioPermisoRepository();
-                    upRepo.QuitarPermisoAUsuario(_usuarioId.Value);   // tu método que borra todos
-                    foreach (var pid in permisosIds)
-                        upRepo.AsignarPermisoAUsuario(_usuarioId.Value, pid);
+                    // actualizo los permisos directos del usuario
+                    PermisoService.Instancia.ReemplazarPermisosDirectosUsuario(_usuarioId.Value, permisosIds);
 
                     MessageBox.Show("Usuario actualizado.");
                     this.Close();
@@ -492,6 +485,21 @@ namespace Proyecto_IS_Sistema_De_Tickets
                     _suspendCheckEvents = false;
                 }
             }
+        }
+
+        private void TvPermisos_BeforeCheck(object sender, TreeViewCancelEventArgs e)
+        {
+            if (e.Node == null)
+                return;
+
+            if (e.Node.Tag is string tag)
+            {
+                if (tag.StartsWith("ROL_") || tag.StartsWith("PERM_"))
+                    return;
+            }
+
+            e.Cancel = true;
+            e.Node.Checked = false;
         }
     }
 }

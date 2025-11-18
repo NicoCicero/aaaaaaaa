@@ -265,6 +265,27 @@ namespace BL
             VerificadorIntegridadService.Instancia.RecalcularDVV_UsuarioPermiso();
         }
 
+        public void ReemplazarPermisosDirectosUsuario(int usuarioId, IEnumerable<int> nuevosPermisos)
+        {
+            var repo = new DAO.UsuarioPermisoRepository();
+            repo.QuitarPermisoAUsuario(usuarioId);
+
+            var ids = nuevosPermisos?.Distinct().ToList() ?? new List<int>();
+
+            if (ids.Count > 0)
+            {
+                var raw = new DAO.DvRawRepository();
+                foreach (var permisoId in ids)
+                {
+                    repo.AsignarPermisoAUsuario(usuarioId, permisoId);
+                    var dvh = HashHelper.Sha256($"{usuarioId}|{permisoId}");
+                    raw.UpdateUsuarioPermisoDVH(usuarioId, permisoId, dvh);
+                }
+            }
+
+            VerificadorIntegridadService.Instancia.RecalcularDVV_UsuarioPermiso();
+        }
+
 
 
 
