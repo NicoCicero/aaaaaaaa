@@ -16,6 +16,8 @@ namespace Proyecto_IS_Sistema_De_Tickets
     public partial class FormPrueba : Form, IIdiomaObserver
     {
         private readonly IdiomaService _idiomaSrv = new IdiomaService();
+        private readonly AuditoriaService _auditoriaSrv = AuditoriaService.Instancia;
+        private readonly ControlCambiosService _controlCambiosSrv = ControlCambiosService.Instancia;
 
         private bool _registroVisible = false;   // estado del bloque de registro
         private bool _regRolesCargados = false;  // ya lo tenés: lo dejamos 
@@ -262,12 +264,10 @@ namespace Proyecto_IS_Sistema_De_Tickets
         }
         private void CargarCambiosInicial()
         {
-            var repo = new ControlCambiosRepository();
-
             dtpCambiosDesde.Value = new DateTime(2000, 1, 1);
             dtpCambiosHasta.Value = DateTime.Today.AddDays(1);
 
-            var datos = repo.FiltrarCambios(
+            var datos = _controlCambiosSrv.FiltrarCambios(
                 id: null,
                 usuarioId: null,
                 entidad: null,
@@ -296,14 +296,12 @@ namespace Proyecto_IS_Sistema_De_Tickets
 
         private void CargarBitacoraInicial()
         {
-            var repoInit = new AuditoriaRepository();
-
             // por defecto: desde 2000 hasta mañana
             dtpDesde.Value = new DateTime(2000, 1, 1);
             dtpHasta.Value = DateTime.Today.AddDays(1);
 
             dgvBitacora.AutoGenerateColumns = true;
-            dgvBitacora.DataSource = repoInit.FiltrarAuditoria(
+            dgvBitacora.DataSource = _auditoriaSrv.FiltrarAuditoria(
                 id: null,
                 usuarioId: null,
                 evento: null,
@@ -355,8 +353,7 @@ namespace Proyecto_IS_Sistema_De_Tickets
             var desdeUtc = DateTime.SpecifyKind(dtpDesde.Value.Date, DateTimeKind.Local).ToUniversalTime();
             var hastaUtcExcl = DateTime.SpecifyKind(dtpHasta.Value.Date.AddDays(1), DateTimeKind.Local).ToUniversalTime();
 
-            var repo = new AuditoriaRepository();
-            var datos = repo.FiltrarAuditoria(id, usuarioId, evento, texto, desdeUtc, hastaUtcExcl);
+            var datos = _auditoriaSrv.FiltrarAuditoria(id, usuarioId, evento, texto, desdeUtc, hastaUtcExcl);
 
             dgvBitacora.AutoGenerateColumns = true;
             dgvBitacora.DataSource = datos;
@@ -381,9 +378,8 @@ namespace Proyecto_IS_Sistema_De_Tickets
             dtpHasta.Value = DateTime.Today.AddDays(1);
 
             // carga inicial (sin filtros de texto)
-            var repoInit = new AuditoriaRepository();
             dgvBitacora.AutoGenerateColumns = true;
-            dgvBitacora.DataSource = repoInit.FiltrarAuditoria(
+            dgvBitacora.DataSource = _auditoriaSrv.FiltrarAuditoria(
                 id: null,
                 usuarioId: null,
                 evento: null,
@@ -518,8 +514,7 @@ namespace Proyecto_IS_Sistema_De_Tickets
             var desdeUtc = DateTime.SpecifyKind(dtpCambiosDesde.Value.Date, DateTimeKind.Local).ToUniversalTime();
             var hastaUtc = DateTime.SpecifyKind(dtpCambiosHasta.Value.Date.AddDays(1), DateTimeKind.Local).ToUniversalTime();
 
-            var repo = new ControlCambiosRepository();
-            var datos = repo.FiltrarCambios(
+            var datos = _controlCambiosSrv.FiltrarCambios(
                 id: id,
                 usuarioId: usuarioId,
                 entidad: entidad,

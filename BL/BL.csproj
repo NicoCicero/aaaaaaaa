@@ -42,8 +42,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AdminSeedHelper.cs" />
+    <Compile Include="AuditoriaService.cs" />
     <Compile Include="AuthService.cs" />
     <Compile Include="CryptoManager.cs" />
+    <Compile Include="ControlCambiosService.cs" />
     <Compile Include="HashHelper.cs" />
     <Compile Include="IdiomaManager.cs" />
     <Compile Include="IdiomaService.cs" />
