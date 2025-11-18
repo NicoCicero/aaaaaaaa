@@ -59,8 +59,9 @@ namespace BL
             if (string.IsNullOrWhiteSpace(nombre)) throw new ArgumentException("Nombre requerido");
             if (string.IsNullOrEmpty(passwordPlano) || passwordPlano.Length < 8)
                 throw new ArgumentException("La contraseña debe tener al menos 8 caracteres");
-            if (rolesIds == null || !rolesIds.Any())
-                throw new ArgumentException("Seleccioná al menos un rol");
+            var rolesSeleccionados = rolesIds?.Distinct().ToList() ?? new List<int>();
+            if (rolesSeleccionados.Count != 1)
+                throw new ArgumentException("Debés seleccionar exactamente un rol para el usuario.");
 
             if (_repo.EmailExiste(email))
                 throw new InvalidOperationException("Ya existe un usuario con ese email.");
@@ -68,11 +69,11 @@ namespace BL
             var salt = _crypto.GenerateSalt(16);
             var hash = _crypto.HashPasswordPBKDF2(passwordPlano, salt);
 
-            int nuevoId = _repo.InsertUsuario(email, nombre, hash, salt, activo, rolesIds);
+            int nuevoId = _repo.InsertUsuario(email, nombre, hash, salt, activo, rolesSeleccionados);
 
             // auditoría de control de cambios (ALTA)
             int? usuarioActualId = SessionManager.Instancia.UsuarioActual?.Id;
-            string resumenNuevo = $"Email={email}; Nombre={nombre}; Activo={activo}; Roles={string.Join(",", rolesIds)}";
+            string resumenNuevo = $"Email={email}; Nombre={nombre}; Activo={activo}; Roles={string.Join(",", rolesSeleccionados)}";
 
             _ccRepo.RegistrarCambio(
                 entidad: "Usuario",
@@ -119,7 +120,9 @@ namespace BL
 
             // 1.b traigo los roles originales
             var rolesOriginales = _usrRepo.GetRoles(id).Select(r => r.Id).ToList();
-            var rolesNuevos = rolesIds?.ToList() ?? new List<int>();
+            var rolesNuevos = rolesIds?.Distinct().ToList() ?? new List<int>();
+            if (rolesNuevos.Count != 1)
+                throw new ArgumentException("El usuario debe tener exactamente un rol asignado.");
 
             // 2. actualizo datos básicos en BD
             _repo.UpdateUsuario(id, email, nombre, activo);
@@ -366,32 +369,38 @@ namespace BL
             if (!SessionManager.Instancia.TienePermiso("Usuario.Modificar"))
                 throw new UnauthorizedAccessException("No contás con permiso para modificar roles de usuario.");
 
-            
+            var rolesNormalizados = nuevosRoles?.Distinct().ToList() ?? new List<int>();
+            if (rolesNormalizados.Count > 1)
+                throw new ArgumentException("Cada usuario solo puede tener un rol asignado.");
 
-            // Registramos el cambio
+            var rolesActuales = _usrRepo.GetRoles(usuarioId).Select(r => r.Id).ToList();
+            bool sinCambios = rolesActuales.Count == rolesNormalizados.Count
+                && !rolesActuales.Except(rolesNormalizados).Any();
+
+            if (sinCambios)
+                return;
+
+            _repo.ReemplazarRolesUsuario(usuarioId, rolesNormalizados);
+
+            var raw = new DAO.DvRawRepository();
+            foreach (var rolId in rolesNormalizados)
+            {
+                var dvh = BL.HashHelper.Sha256($"{usuarioId}|{rolId}");
+                raw.UpdateUsuarioRolDVH(usuarioId, rolId, dvh);
+            }
+
+            BL.VerificadorIntegridadService.Instancia.RecalcularDVV_UsuarioRol();
+
             int? usuarioActualId = SessionManager.Instancia.UsuarioActual?.Id;
             _ccRepo.RegistrarCambio(
                 entidad: "Usuario",
                 entidadId: usuarioId,
                 accion: "Modificacion",
                 campo: "Roles",
-                valorAnterior: null,
-                valorNuevo: string.Join(",", nuevosRoles),
+                valorAnterior: string.Join(",", rolesActuales),
+                valorNuevo: string.Join(",", rolesNormalizados),
                 usuarioId: usuarioActualId
             );
-
-            _repo.ReemplazarRolesUsuario(usuarioId, nuevosRoles);
-
-            // Setear DVH por cada fila actual de UsuarioRol del usuario
-            var raw = new DAO.DvRawRepository();
-            foreach (var rolId in nuevosRoles)
-            {
-                var dvh = BL.HashHelper.Sha256($"{usuarioId}|{rolId}");
-                raw.UpdateUsuarioRolDVH(usuarioId, rolId, dvh);
-            }
-
-            // Luego DVV de la tabla
-            BL.VerificadorIntegridadService.Instancia.RecalcularDVV_UsuarioRol();
         }
 
         public void EliminarUsuario(int usuarioId)

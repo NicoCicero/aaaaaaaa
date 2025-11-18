@@ -371,7 +371,7 @@ namespace Proyecto_IS_Sistema_De_Tickets
             // roles del usuario
             var u = UserAdminService.Instancia.ObtenerUsuarioCompleto(usuarioId);
             var rolesUsuario = u.Roles?.Select(r => r.Id).ToList() ?? new List<int>();
-            int? rolPrincipal = rolesUsuario.FirstOrDefault();
+            int? rolPrincipal = rolesUsuario.Any() ? (int?)rolesUsuario.First() : null;
 
             // permisos directos del usuario (si tenés tabla UsuarioPermiso)
             var permisosDirectos = new DAO.UsuarioPermisoRepository().GetPermisosDirectos(usuarioId).Select(p => p.Id).ToHashSet();

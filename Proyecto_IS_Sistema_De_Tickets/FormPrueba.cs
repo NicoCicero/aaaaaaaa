@@ -799,10 +799,13 @@ namespace Proyecto_IS_Sistema_De_Tickets
                 var usuarioRepo = new DAO.UsuarioRepository();
                 var rolesActuales = usuarioRepo.GetRoles(usuarioId).Select(r => r.Id).ToList();
 
-                if (!rolesActuales.Contains(rolId))
-                    rolesActuales.Add(rolId);
+                if (rolesActuales.Count == 1 && rolesActuales[0] == rolId)
+                {
+                    MessageBox.Show("El usuario ya tiene asignado ese rol.");
+                    return;
+                }
 
-                BL.UserAdminService.Instancia.ActualizarRolesUsuario(usuarioId, rolesActuales);
+                BL.UserAdminService.Instancia.ActualizarRolesUsuario(usuarioId, new List<int> { rolId });
             }
             else if (tag.StartsWith("PERM_"))
             {
@@ -810,7 +813,9 @@ namespace Proyecto_IS_Sistema_De_Tickets
 
                 // verificar si ya está incluido en un rol del usuario
                 var permisosUsuario = BL.PermisoService.Instancia.ObtenerPermisosDeUsuario(usuarioId);
-                if (permisosUsuario.TienePermiso(treeDisponibles.SelectedNode.Text))
+                var permisosActuales = new HashSet<int>();
+                AplanarPermisos(permisosUsuario, permisosActuales);
+                if (permisosActuales.Contains(permisoId))
                 {
                     MessageBox.Show("Ese permiso ya está incluido en un rol asignado.");
                     return;
@@ -850,6 +855,12 @@ namespace Proyecto_IS_Sistema_De_Tickets
                 var rolesActuales = usuarioRepo.GetRoles(usuarioId);
                 var nuevosRoles = rolesActuales.Where(r => r.Id != rolId).Select(r => r.Id).ToList();
 
+                if (nuevosRoles.Count == 0)
+                {
+                    MessageBox.Show("Cada usuario debe conservar al menos un rol.");
+                    return;
+                }
+
                 // actualizamos la relación
                 BL.UserAdminService.Instancia.ActualizarRolesUsuario(usuarioId, nuevosRoles);
 
@@ -879,6 +890,21 @@ namespace Proyecto_IS_Sistema_De_Tickets
             {
                 lblUsuarioSel.Text = $"Usuario seleccionado: {nodo.Text}";
                 lblUsuarioSel.Tag = usuarioId; // guardo el id para reutilizar
+            }
+        }
+
+        private void AplanarPermisos(PermisoComponent componente, HashSet<int> destino)
+        {
+            if (componente == null || destino == null)
+                return;
+
+            if (componente.Id != 0)
+                destino.Add(componente.Id);
+
+            if (componente is PermisoCompuesto compuesto && compuesto.Hijos != null)
+            {
+                foreach (var hijo in compuesto.Hijos)
+                    AplanarPermisos(hijo, destino);
             }
         }
 
