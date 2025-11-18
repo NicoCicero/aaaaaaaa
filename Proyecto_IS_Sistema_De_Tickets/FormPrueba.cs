@@ -119,6 +119,17 @@ namespace Proyecto_IS_Sistema_De_Tickets
             dgvGestionUsuario.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dgvGestionUsuario.MultiSelect = false;
             dgvGestionUsuario.ReadOnly = true;  // si no editás inline
+
+            // Si el usuario ya había seleccionado un idioma en el login,
+            // cuando este formulario se suscribe aún no están seteadas las
+            // referencias a las pestañas, por lo que los textos no se
+            // actualizan. Reaplicamos la última traducción ahora que ya está
+            // inicializado todo.
+            var ultimaTraduccion = IdiomaManager.Instancia.ObtenerUltimaTraduccion();
+            if (ultimaTraduccion != null)
+            {
+                ActualizarIdioma(ultimaTraduccion);
+            }
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
