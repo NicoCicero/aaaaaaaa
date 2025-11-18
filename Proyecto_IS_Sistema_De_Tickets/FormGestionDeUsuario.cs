@@ -494,12 +494,14 @@ namespace Proyecto_IS_Sistema_De_Tickets
 
             if (e.Node.Tag is string tag)
             {
+                // Si es un rol o un permiso, dejo que se tilden / destilden
                 if (tag.StartsWith("ROL_") || tag.StartsWith("PERM_"))
                     return;
             }
 
+            // Si es un nodo "carpeta" tipo "Roles" o "Permisos", cancelo el check
             e.Cancel = true;
-            e.Node.Checked = false;
+            // ⚠ NO tocar e.Node.Checked acá, eso rompe todo
         }
     }
 }

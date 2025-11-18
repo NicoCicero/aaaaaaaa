@@ -130,11 +130,21 @@ namespace Proyecto_IS_Sistema_De_Tickets
         // este es el MÉTODO que llama el observer
         public void ActualizarIdioma(Dictionary<string, string> t)
         {
-            // pestañas
-            tabGeneral.TabPages[0].Text = t["TAB_MENU"];
-            tabGeneral.TabPages[1].Text = t["TAB_USUARIOS"];
-            tabGeneral.TabPages[2].Text = t["TAB_BITACORA"];
-            tabGeneral.TabPages[3].Text = t["TAB_CONTROL_CAMBIOS"];
+            // pestaña de menú (siempre debería existir)
+            if (tabGeneral.TabPages.Count > 0)
+                tabGeneral.TabPages[0].Text = t["TAB_MENU"];
+
+            // pestaña de usuarios (solo si existe y no fue removida por permisos)
+            if (_tabRegistrar != null && tabGeneral.TabPages.Contains(_tabRegistrar))
+                _tabRegistrar.Text = t["TAB_USUARIOS"];
+
+            // pestaña de bitácora
+            if (_tabBitacora != null && tabGeneral.TabPages.Contains(_tabBitacora))
+                _tabBitacora.Text = t["TAB_BITACORA"];
+
+            // pestaña de control de cambios
+            if (_tabCambios != null && tabGeneral.TabPages.Contains(_tabCambios))
+                _tabCambios.Text = t["TAB_CONTROL_CAMBIOS"];
 
             // botones
             btnCerrarSesion.Text = t["BTN_CERRAR_SESION"];
