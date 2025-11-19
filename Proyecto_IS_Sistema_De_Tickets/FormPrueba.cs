@@ -20,11 +20,12 @@ namespace Proyecto_IS_Sistema_De_Tickets
         private readonly ControlCambiosService _controlCambiosSrv = ControlCambiosService.Instancia;
 
         private bool _registroVisible = false;   // estado del bloque de registro
-        private bool _regRolesCargados = false;  // ya lo tenés: lo dejamos 
+        private bool _regRolesCargados = false;  // ya lo tenés: lo dejamos
 
         private TabPage _tabRegistrar;
         private TabPage _tabBitacora;
         private TabPage _tabCambios;
+        private TabPage _tabPermisos;
         public FormPrueba()
         {
             InitializeComponent();
@@ -53,7 +54,8 @@ namespace Proyecto_IS_Sistema_De_Tickets
             bool puedeGestionarPermisos = SessionManager.Instancia.TienePermiso("Permiso.Gestionar");
 
             // guardo referencia al tab (asumo que es el cuarto o quinto)
-            TabPage _tabPermisos = tabGeneral.TabPages.Count > 4 ? tabGeneral.TabPages[4] : null;
+            _tabPermisos = tabGeneral.TabPages.Cast<TabPage>().FirstOrDefault(t => t.Name == "tabPermisos")
+                ?? (tabGeneral.TabPages.Count > 4 ? tabGeneral.TabPages[4] : null);
 
             // si no puede gestionarlos, lo quitamos
             if (!puedeGestionarPermisos && _tabPermisos != null)
@@ -201,65 +203,58 @@ namespace Proyecto_IS_Sistema_De_Tickets
             bool puedeVerBitacora = SessionManager.Instancia.TienePermiso("Bitacora.Ver");
             bool puedeVerCambios = SessionManager.Instancia.TienePermiso("ControlCambios.Ver");
 
-            switch (tabGeneral.SelectedIndex)
+            var selectedTab = tabGeneral.SelectedTab;
+
+            if (selectedTab == _tabRegistrar)
             {
-                case 0: // 🏠 Menú principal
-                        // No hay restricción, todos pueden verlo
-                    break;
+                if (!puedeVerUsuarios)
+                {
+                    MessageBox.Show("No contás con permiso para gestionar usuarios.");
+                    tabGeneral.SelectedIndex = 0; // vuelve al menú
+                    return;
+                }
 
-                case 1: // 👤 Registrar usuarios
-                    if (!puedeVerUsuarios)
-                    {
-                        MessageBox.Show("No contás con permiso para gestionar usuarios.");
-                        tabGeneral.SelectedIndex = 0; // vuelve al menú
-                        return;
-                    }
-
-                    // Si es admin, mostramos y refrescamos la grilla
-                    SetRegistrarVisible(true);
-                    ActualizarBotonesGestionUsuarios(puedeAltaUsuarios, puedeModificarUsuarios, puedeBajaUsuarios);
-                    CargarGrillaGestionUsuarios();
-                    break;
-
-                case 2: // 📜 Bitácora
-                    if (!puedeVerBitacora)
-                    {
-                        MessageBox.Show("No contás con permiso para ver la Bitácora.");
-                        tabGeneral.SelectedIndex = 0;
-                        return;
-                    }
-
-                    // Carga inicial (si no se cargó antes)
-                    CargarEventosBitacoraHardcoded();
-                    CargarBitacoraInicial();
-                    break;
-                case 3: // 👈 cambios
-                    if (!puedeVerCambios)
-                    {
-                        MessageBox.Show("No contás con permiso para ver el Control de Cambios.");
-                        tabGeneral.SelectedIndex = 0;
-                        return;
-                    }
-                    CargarCambiosInicial();
-                    break;
-
-                case 4: // o 5, según corresponda
-                    bool puedeGestionarPermisos = SessionManager.Instancia.TienePermiso("Permiso.Gestionar");
-                    if (!puedeGestionarPermisos)
-                    {
-                        MessageBox.Show("No contás con permiso para gestionar permisos.");
-                        tabGeneral.SelectedIndex = 0;
-                        return;
-                    }
-
-                    // si tiene permiso, cargamos el contenido
-                    CargarUsuariosConPermisos();
-                    CargarRolesYPermisosDisponibles();
-                    break;
-                default:
-                    // En caso de que se agreguen nuevas pestañas y quieras controlar más
+                // Si es admin, mostramos y refrescamos la grilla
+                SetRegistrarVisible(true);
+                ActualizarBotonesGestionUsuarios(puedeAltaUsuarios, puedeModificarUsuarios, puedeBajaUsuarios);
+                CargarGrillaGestionUsuarios();
+            }
+            else if (selectedTab == _tabBitacora)
+            {
+                if (!puedeVerBitacora)
+                {
+                    MessageBox.Show("No contás con permiso para ver la Bitácora.");
                     tabGeneral.SelectedIndex = 0;
-                    break;
+                    return;
+                }
+
+                // Carga inicial (si no se cargó antes)
+                CargarEventosBitacoraHardcoded();
+                CargarBitacoraInicial();
+            }
+            else if (selectedTab == _tabCambios)
+            {
+                if (!puedeVerCambios)
+                {
+                    MessageBox.Show("No contás con permiso para ver el Control de Cambios.");
+                    tabGeneral.SelectedIndex = 0;
+                    return;
+                }
+                CargarCambiosInicial();
+            }
+            else if (selectedTab == _tabPermisos)
+            {
+                bool puedeGestionarPermisos = SessionManager.Instancia.TienePermiso("Permiso.Gestionar");
+                if (!puedeGestionarPermisos)
+                {
+                    MessageBox.Show("No contás con permiso para gestionar permisos.");
+                    tabGeneral.SelectedIndex = 0;
+                    return;
+                }
+
+                // si tiene permiso, cargamos el contenido
+                CargarUsuariosConPermisos();
+                CargarRolesYPermisosDisponibles();
             }
         }
         private void CargarCambiosInicial()
